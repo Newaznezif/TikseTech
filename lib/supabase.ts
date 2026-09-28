@@ -9,15 +9,15 @@ export function isSupabaseConfigured() {
 }
 
 export function shouldUseLocalStore() {
-    if (process.env.USE_LOCAL_STORE === 'true') {
+    if (process.env.NODE_ENV === 'test') {
         return true;
     }
 
-    if (process.env.USE_LOCAL_STORE === 'false') {
+    if (process.env.NODE_ENV === 'production') {
         return false;
     }
 
-    return process.env.NODE_ENV === 'test';
+    return process.env.USE_LOCAL_STORE === 'true';
 }
 
 export const useLocalStore = shouldUseLocalStore();

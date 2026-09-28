@@ -1,7 +1,3 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { createWriteStream } from 'node:fs';
-
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 
@@ -26,17 +22,15 @@ export async function generateCertificatePdf({
     const certificateNumber = generateCertificateNumber();
     const safeName = participantName.replace(/[^a-z0-9-_]+/gi, '-').toLowerCase();
     const fileName = `${safeName}-${verificationCode.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`;
-    const certDir = path.join(process.cwd(), 'public', 'certificates');
-    await fs.mkdir(certDir, { recursive: true });
-
-    const filePath = path.join(certDir, fileName);
     const doc = new PDFDocument({ size: 'A4', layout: 'landscape' });
-    const writeStream = createWriteStream(filePath);
+    const chunks: Buffer[] = [];
 
     await new Promise<void>((resolve, reject) => {
-        doc.pipe(writeStream);
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
+        doc.on('data', (chunk) => {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        doc.on('end', resolve);
+        doc.on('error', reject);
 
         doc.fillColor('#0f172a').fontSize(28).text('TIKSE TECH', 80, 60);
         doc.fillColor('#2563eb').fontSize(26).text('CERTIFICATE OF COMPLETION', 80, 100);
@@ -64,6 +58,8 @@ export async function generateCertificatePdf({
     });
 
     return {
+        buffer: Buffer.concat(chunks),
+        fileName,
         path: `/certificates/${fileName}`,
         certificateNumber,
         verificationCode
