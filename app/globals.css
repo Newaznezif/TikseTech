@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    color-scheme: light;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.container-shell {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+.card-surface {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-soft;
+}
+
+.section-title {
+    @apply text-3xl font-bold tracking-tight text-slate-900;
+}
+
+.link-underline {
+    @apply text-slate-700 transition hover:text-blue-600;
+}
