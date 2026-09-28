@@ -8,3 +8,7 @@ coverage
 npm-debug.log*
 .DS_Store
 *.tsbuildinfo
+data/*.json
+data/*.sqlite
+data/*.db
+supabase/.temp/
