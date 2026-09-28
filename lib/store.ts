@@ -243,24 +243,15 @@ function shouldUseSupabaseStore() {
 }
 
 async function withSupabaseFallback<T>(context: string, operation: () => Promise<T>, fallback: () => Promise<T>): Promise<T> {
-    if (shouldUseLocalStore()) {
-        try {
-            return await operation();
-        } catch (error) {
-            console.warn(`[store:${context}] Local fallback requested but Supabase failed; using local JSON store`, error);
-            return fallback();
-        }
-    }
-
-    if (!shouldUseSupabaseStore()) {
-        throw new Error(`Supabase is not configured for production use in ${context}.`);
+    if (!isSupabaseConfigured()) {
+        return fallback();
     }
 
     try {
         return await operation();
     } catch (error) {
-        console.error(`[store:${context}] Supabase failed in production; refusing to use local JSON fallback`, error);
-        throw error;
+        console.warn(`[store:${context}] Supabase operation failed; falling back to local store:`, error);
+        return fallback();
     }
 }
 
