@@ -19,14 +19,17 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
     const pathname = (await headers()).get('x-pathname') || '';
+    const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
     const isAdminLogin = pathname === '/admin/login';
+
     return (
         <html lang="en">
             <body className={isAdminLogin ? 'bg-[#07111f] text-white antialiased' : 'bg-slate-50 text-slate-900 antialiased'}>
                 <div className="min-h-screen">
-                    {!isAdminLogin ? <SiteHeader /> : null}
+                    {/* Admin pages use their own manager-workspace navigation. */}
+                    {!isAdminRoute ? <SiteHeader /> : null}
                     <div>{children}</div>
-                    {!isAdminLogin ? <SiteFooter /> : null}
+                    {!isAdminRoute ? <SiteFooter /> : null}
                 </div>
             </body>
         </html>
