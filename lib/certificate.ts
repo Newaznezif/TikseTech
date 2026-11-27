@@ -38,6 +38,8 @@ export async function generateCertificatePdf({
     verificationCode: string;
     certificateNumber: string;
     design?: CertificateDesign | null;
+    signatureImage?: Buffer | null;
+    stampImage?: Buffer | null;
 }) {
     const safeName = participantName.replace(/[^a-z0-9-_]+/gi, '-').toLowerCase();
     const fileName = `${safeName}-${verificationCode.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`;
@@ -70,7 +72,6 @@ export async function generateCertificatePdf({
         doc.fillColor(primary).font('Helvetica-Bold').fontSize(21).text(programName, 100, 323, { width: 640, align: 'center' });
         doc.fillColor('#475569').font('Helvetica').fontSize(10).text(`CATEGORY: ${category.toUpperCase()}     •     DURATION: ${duration}`, 80, 365, { width: 680, align: 'center' });
         doc.fillColor('#475569').fontSize(10).text(`COMPLETED: ${new Date(completedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: 'numeric' })}`, 80, 385, { width: 680, align: 'center' });
-        doc.fillColor(primary).font('Times-Italic').fontSize(22).text(signatureText, 88, 440, { width: 210, align: 'center' });
         if (signatureImage) {
             try { doc.image(signatureImage, 112, 424, { fit: [160, 42], align: 'center', valign: 'center' }); }
             catch { doc.fillColor(primary).font('Times-Italic').fontSize(22).text(signatureText, 88, 440, { width: 210, align: 'center' }); }
