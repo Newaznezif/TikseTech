@@ -1,138 +1,59 @@
-﻿# TIKSE TECH
+# TIKSE TECH
 
-TIKSE TECH is a full-stack learning and talent platform for remote technology training, internships, mentorship, and program-based skill development. The app helps users discover programs, apply, track enrollment progress, complete learning milestones, receive certificates, and verify credentials.
+TIKSE TECH is a remote technology learning and internship platform. Applicants create an account, apply to a program, complete field-specific challenges, submit work for manual review, receive feedback and scores, and earn verifiable certificates after completion.
 
-## What this platform does
+## Platform workflow
 
-- Public landing page and program discovery
-- Program detail pages and application flow
-- User registration and login
-- Role-based access for participants, mentors, and administrators
-- Enrollment and participant status tracking
-- Program completion workflows
-- Certificate generation and verification
-- Community pages for announcements, discussions, and tasks
+1. Applicant registers and verifies their email.
+2. Applicant browses open programs and submits an application.
+3. An administrator reviews the application and accepts eligible applicants.
+4. The administrator publishes field-specific challenge PDFs.
+5. Eligible participants download the challenge, complete it, and upload their work.
+6. Administrators manually review submissions, assign a score, and leave feedback.
+7. Approved participants can complete the program and receive a verifiable certificate.
 
-## Tech stack
+## Stack
 
-- Next.js 15
-- React 19
-- TypeScript
+- Next.js 15 / React 19 / TypeScript
 - Tailwind CSS
-- Supabase
+- Supabase Auth, PostgreSQL, and private Storage
 - Vitest
 
-## Quick start
-
-1. Install dependencies:
+## Local development
 
 ```bash
 npm install
-```
-
-2. Create your local environment file from the example:
-
-```bash
-copy .env.example .env.local
-```
-
-3. Fill in your Supabase and app settings.
-
-4. Start the app:
-
-```bash
+cp .env.example .env.local
 npm run dev
 ```
 
-Open the app in the browser at:
+Configure Supabase values in `.env.local`. Keep `SUPABASE_SERVICE_ROLE_KEY` server-only. Local JSON mode is intended for development/test only and is rejected by production authentication.
 
-- http://localhost:3000
+## Database
 
-If you need another port:
+Apply migrations in order from `supabase/migrations`. Migration `006_challenges_and_assignment_submissions.sql` adds private challenge documents, assignment submissions, scoring/review fields, and storage access policies.
 
-```bash
-npm run dev -- --port 3001
-```
+## Authentication and authorization
 
-## Required environment variables
+- Production sessions use Supabase Auth cookies through `@supabase/ssr`.
+- Every server-side identity lookup verifies the user with `auth.getUser()`.
+- Authorization roles are loaded from the trusted `profiles.role` column.
+- User-editable `user_metadata` and client-supplied role values are never authorization sources.
+- Private challenge and submission files use private Storage buckets and row-level policies.
+- The service-role key must never be included in a `NEXT_PUBLIC_*` variable or committed to Git.
 
-Use this in `.env.local`:
+## Free-first deployment
 
-```bash
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-# Optional fallback if your Supabase project uses the newer publishable naming
-# NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-USE_LOCAL_STORE=false
-EMAIL_API_KEY=
-EMAIL_FROM=
-```
+The initial target is a free global deployment, not Ethiopia-only data residency. A Next.js-compatible edge host and Supabase Free can support a small pilot, subject to their quotas and inactivity limits. Validate the adapter against this app's server actions, PDF generation, and storage flows before production deployment.
 
-### Important rules
+## Email notifications
 
-- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are safe to expose in the browser.
-- `SUPABASE_SERVICE_ROLE_KEY` is server-only and must never be exposed to the frontend or committed to Git.
-- `USE_LOCAL_STORE` should stay `false` in production.
-- Local JSON storage is only a development/test fallback and must not be used in production.
+Supabase Auth handles verification emails. Optional application-status and assignment-review notifications can be enabled with a transactional email provider by setting `RESEND_API_KEY` and `EMAIL_FROM`. A verified sender domain is generally required. In-dashboard status must remain available if email delivery is unavailable.
 
-## Supabase setup
-
-1. Create a Supabase project.
-2. Add your Supabase URL and anon key to `.env.local`.
-3. Add the service role key only in server-side environment variables.
-4. Apply any database migrations in the `supabase` folder.
-5. Use your project URL and keys in Vercel deployment settings as well.
-
-## Database migration
-
-```bash
-npx supabase db push
-```
-
-## Development workflow
+## Scripts
 
 ```bash
 npm run dev
 npm run build
 npm run test
 ```
-
-## Deployment
-
-This project is designed for deployment on Vercel as a Next.js application.
-
-Set the same environment variables in your Vercel project settings for preview and production:
-
-- `NEXT_PUBLIC_APP_URL`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `USE_LOCAL_STORE=false`
-
-Important: the app must not depend on local filesystem writes in production. Certificate generation is handled server-side and should remain compatible with serverless hosting.
-
-## Admin and role setup
-
-Create the first admin through the application using a secure authenticated flow, or assign trusted admin roles through the configured backend workflow. Role checks are enforced server-side.
-
-## Security notes
-
-- Never commit secrets in `.env`, `.env.local`, or any generated config files.
-- Never expose service-role credentials in frontend code.
-- Keep production configuration separate from local development settings.
-- Validate all admin and mentorship actions with server-side authorization checks.
-
-## Project folders
-
-- `app/` — Next.js app routes and pages
-- `actions/` — server actions
-- `components/` — reusable UI components
-- `lib/` — shared logic and integrations
-- `tests/` — regression and workflow tests
-- `supabase/` — database and setup files
-
-## Summary
-
-TIKSE TECH is a real-world training platform for remote learning, mentorship, and certification. It is structured for production use, includes role-based access, supports Supabase-backed data storage, and is ready for Vercel deployment when the required environment variables are configured correctly.

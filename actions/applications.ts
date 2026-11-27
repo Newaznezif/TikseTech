@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 
 import { getSessionUser } from '@/lib/session';
-import { createApplication } from '@/lib/store';
+import { createApplication, getUserById } from '@/lib/store';
 import { applicationSchema } from '@/lib/validation';
 
 export async function submitApplication(formData: FormData) {
@@ -48,9 +48,9 @@ export async function submitApplication(formData: FormData) {
     }
 
     const finalApplicantId = applicantId || session.profileId;
-    if (session.profileId !== finalApplicantId) {
-        throw new Error('You can only submit an application from your own account.');
-    }
+    if (session.profileId !== finalApplicantId) throw new Error('You can only submit an application from your own account.');
+    const trustedProfile = await getUserById(session.profileId);
+    if (!trustedProfile) throw new Error('Your participant profile could not be found. Please contact support.');
 
     const skills = String(parsed.data.skills)
         .split(',')
@@ -60,10 +60,10 @@ export async function submitApplication(formData: FormData) {
     await createApplication({
         ...payload,
         applicantId: finalApplicantId,
-        fullName: parsed.data.fullName,
-        email: parsed.data.email,
-        country: parsed.data.country,
-        timezone: parsed.data.timezone,
+        fullName: trustedProfile.fullName,
+        email: trustedProfile.email,
+        country: trustedProfile.country || parsed.data.country,
+        timezone: trustedProfile.timezone || parsed.data.timezone,
         education: parsed.data.education,
         experience: parsed.data.experience,
         motivation: parsed.data.motivation,
