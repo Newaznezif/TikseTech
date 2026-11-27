@@ -27,8 +27,9 @@ export async function getSessionUser(): Promise<SessionUser | null> {
             const { data: { user }, error: userError } = await supabase.auth.getUser();
             if (userError || !user) return null;
             const { data: profile, error: profileError } = await supabase.from('profiles')
-                .select('id, email, full_name, role').eq('auth_user_id', user.id).maybeSingle();
+                .select('id, email, full_name, role, account_status').eq('auth_user_id', user.id).maybeSingle();
             if (profileError || !profile) return null;
+            if (String(profile.role || '').toUpperCase() === 'PARTICIPANT' && String(profile.account_status || 'ACTIVE') === 'SUSPENDED') return null;
             return { email: profile.email || user.email || '', role: profile.role || 'PARTICIPANT',
                 profileId: profile.id, name: profile.full_name || user.email || 'Participant' };
         } catch { return null; }
