@@ -11,9 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_APP_URL: http://localhost:3000
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key
-      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
       SESSION_SECRET: ci-only-session-secret-not-for-production
       USE_LOCAL_STORE: 'true'
     steps:
