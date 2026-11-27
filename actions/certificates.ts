@@ -26,6 +26,11 @@ export async function saveCertificateTemplateAction(formData: FormData) {
     const accentColor = String(formData.get('accentColor') || '#c49a45');
     const showOnHomepage = formData.get('showOnHomepage') === 'on';
 
+    if (!programId || !signerName || !signatureText) throw new Error('Select a course and provide the authorized signatory and signature.');
+    if (!/^#[0-9a-fA-F]{6}$/.test(primaryColor) || !/^#[0-9a-fA-F]{6}$/.test(accentColor)) {
+        throw new Error('Certificate colors must be valid six-digit hex colors.');
+    }
+
     const { data: existingTemplate, error: existingError } = await admin.from('certificate_templates')
         .select('signature_image_path, stamp_image_path').eq('program_id', programId).maybeSingle();
     if (existingError) throw new Error('Existing certificate assets could not be loaded.');
@@ -48,11 +53,6 @@ export async function saveCertificateTemplateAction(formData: FormData) {
 
     const signatureImagePath = await uploadCertificateAsset('signatureImage', 'signature', existingTemplate?.signature_image_path || null);
     const stampImagePath = await uploadCertificateAsset('stampImage', 'stamp', existingTemplate?.stamp_image_path || null);
-
-    if (!programId || !signerName || !signatureText) throw new Error('Select a course and provide the authorized signatory and signature.');
-    if (!/^#[0-9a-fA-F]{6}$/.test(primaryColor) || !/^#[0-9a-fA-F]{6}$/.test(accentColor)) {
-        throw new Error('Certificate colors must be valid six-digit hex colors.');
-    }
 
     const { error } = await admin.from('certificate_templates').upsert({
         program_id: programId,
