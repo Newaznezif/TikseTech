@@ -2,7 +2,6 @@ import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 
 import { appUrl } from '@/lib/env';
-import { generateCertificateNumber } from '@/lib/utils';
 
 export async function generateCertificatePdf({
     participantName,
@@ -10,7 +9,8 @@ export async function generateCertificatePdf({
     category,
     duration,
     completedAt,
-    verificationCode
+    verificationCode,
+    certificateNumber
 }: {
     participantName: string;
     programName: string;
@@ -18,8 +18,8 @@ export async function generateCertificatePdf({
     duration: string;
     completedAt: string;
     verificationCode: string;
+    certificateNumber: string;
 }) {
-    const certificateNumber = generateCertificateNumber();
     const safeName = participantName.replace(/[^a-z0-9-_]+/gi, '-').toLowerCase();
     const fileName = `${safeName}-${verificationCode.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`;
     const doc = new PDFDocument({ size: 'A4', layout: 'landscape' });
