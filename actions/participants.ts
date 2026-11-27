@@ -36,7 +36,7 @@ export async function saveParticipantAdminAction(formData: FormData) {
   if (!admin) throw new Error('Supabase server credentials are not configured.');
 
   const { data: before, error: readError } = await admin.from('profiles')
-    .select('id, role, participant_number').eq('id', participantId).maybeSingle();
+    .select('id, auth_user_id, role, participant_number, account_status').eq('id', participantId).maybeSingle();
   if (readError || !before || before.role !== 'PARTICIPANT') {
     throw new Error('The participant record could not be found or is not editable.');
   }
@@ -56,6 +56,16 @@ export async function saveParticipantAdminAction(formData: FormData) {
   if (error) {
     if (error.code === '23505') throw new Error('That participant ID is already assigned to another account.');
     throw new Error('Participant account could not be updated: ' + error.message);
+  }
+
+  if (before.auth_user_id) {
+    const { error: authError } = await admin.auth.admin.updateUserById(before.auth_user_id, {
+      ban_duration: accountStatus === 'SUSPENDED' ? '876000h' : 'none'
+    });
+    if (authError) {
+      await admin.from('profiles').update({ account_status: before.account_status || 'ACTIVE' }).eq('id', participantId);
+      throw new Error('Participant profile was saved, but authentication access could not be updated: ' + authError.message);
+    }
   }
 
   await admin.from('audit_logs').insert({
