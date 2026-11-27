@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getSessionUser, hasRequiredRole } from '@/lib/session';
 import { createCertificateForProgram, markParticipantCompleted, revokeCertificate } from '@/lib/store';
 import { getSupabaseAdminClient, isSupabaseConfigured, shouldUseLocalStore } from '@/lib/supabase';
+import { sendCertificateEmail } from '@/lib/email';
 
 export async function saveCertificateTemplateAction(formData: FormData) {
     const session = await getSessionUser();
@@ -100,7 +101,24 @@ export async function markCompletedAction(formData: FormData) {
     if (!enrollment) throw new Error('Participant is not enrolled in this program.');
     const certificate = await createCertificateForProgram(programId, participantId);
     if (!certificate) throw new Error('Certificate could not be issued.');
-    redirect('/admin');
+
+    const admin = getSupabaseAdminClient();
+    if (!admin) redirect('/admin/certificates?issued=1&email=unavailable');
+    const [participantResult, programResult] = await Promise.all([
+        admin.from('profiles').select('full_name,email').eq('id', participantId).maybeSingle(),
+        admin.from('programs').select('title').eq('id', programId).maybeSingle()
+    ]);
+    let emailSent = false;
+    if (!participantResult.error && participantResult.data?.email && !programResult.error && programResult.data?.title) {
+        emailSent = await sendCertificateEmail({
+            to: participantResult.data.email,
+            name: participantResult.data.full_name || 'Participant',
+            programTitle: programResult.data.title,
+            certificateNumber: certificate.certificateNumber,
+            verificationCode: certificate.verificationCode
+        });
+    }
+    redirect('/admin/certificates?issued=1&email=' + (emailSent ? 'sent' : 'unavailable'));
 }
 
 export async function revokeCertificateAction(formData: FormData) {
