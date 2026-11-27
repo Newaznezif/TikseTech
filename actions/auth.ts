@@ -72,12 +72,16 @@ export async function loginUser(formData: FormData) {
             redirect(loginPath + '?error=invalid-credentials');
         }
         const { data: profile, error: profileError } = await supabase.from('profiles')
-            .select('id, email, full_name, role').eq('auth_user_id', data.user.id).maybeSingle();
+            .select('id, email, full_name, role, account_status').eq('auth_user_id', data.user.id).maybeSingle();
         if (profileError || !profile) {
             await supabase.auth.signOut();
             redirect(loginPath + '?error=profile-not-ready');
         }
         const isAdministrator = ['ADMIN', 'SUPER_ADMIN'].includes(String(profile.role || '').toUpperCase());
+        if (!isAdministrator && String(profile.account_status || 'ACTIVE') === 'SUSPENDED') {
+            await supabase.auth.signOut();
+            redirect(loginPath + '?error=account-suspended');
+        }
         if (adminPortal && !isAdministrator) {
             await supabase.auth.signOut();
             redirect('/admin/login?error=not-admin');
