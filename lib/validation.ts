@@ -15,7 +15,7 @@ export const applicationSchema = z.object({
     experience: z.string().trim().min(5, 'Experience is required.'),
     skills: z.union([z.string().min(1), z.array(z.string()).min(1)]).transform((value) => Array.isArray(value) ? value.join(', ') : value),
     motivation: z.string().trim().min(20, 'Please share a bit more about your motivation.'),
-    availability: z.string().trim().min(2, 'Availability is required.'),
+    availability: z.string().optional().default('SELF_PACED'),
     github: z.string().optional().or(z.literal('')),
     linkedin: z.string().optional().or(z.literal('')),
     portfolio: z.string().optional().or(z.literal(''))
