@@ -23,12 +23,12 @@ export async function submitApplication(formData: FormData) {
         timezone: String(formData.get('timezone') || 'UTC').trim(),
         education: String(formData.get('education') || '').trim(),
         experience: String(formData.get('experience') || '').trim(),
-        skills: String(formData.get('skills') || '').split(',').map((item) => item.trim()).filter(Boolean),
+        skills: formData.getAll('skills').map((item) => String(item).trim()).filter(Boolean),
         motivation: String(formData.get('motivation') || '').trim(),
         github: String(formData.get('github') || '').trim(),
         linkedin: String(formData.get('linkedin') || '').trim(),
         portfolio: String(formData.get('portfolio') || '').trim(),
-        availability: String(formData.get('availability') || '').trim(),
+        availability: 'SELF_PACED',
         answers: {
             questionOne: String(formData.get('questionOne') || '').trim()
         }
