@@ -8,11 +8,10 @@ import { applicationSchema } from '@/lib/validation';
 
 export async function submitApplication(formData: FormData) {
     const programId = String(formData.get('programId') || '').trim();
+    const programSlug = String(formData.get('programSlug') || '').trim();
     const applicantId = String(formData.get('applicantId') || '').trim();
 
-    if (!programId) {
-        throw new Error('A valid program is required before submitting an application.');
-    }
+    if (!programId || !programSlug) redirect('/programs');
 
     const payload = {
         programId,
@@ -20,7 +19,6 @@ export async function submitApplication(formData: FormData) {
         fullName: String(formData.get('fullName') || '').trim(),
         email: String(formData.get('email') || '').trim(),
         country: String(formData.get('country') || '').trim(),
-        timezone: String(formData.get('timezone') || 'UTC').trim(),
         education: String(formData.get('education') || '').trim(),
         experience: String(formData.get('experience') || '').trim(),
         skills: formData.getAll('skills').map((item) => String(item).trim()).filter(Boolean),
@@ -29,47 +27,37 @@ export async function submitApplication(formData: FormData) {
         linkedin: String(formData.get('linkedin') || '').trim(),
         portfolio: String(formData.get('portfolio') || '').trim(),
         availability: 'SELF_PACED',
-        answers: {
-            questionOne: String(formData.get('questionOne') || '').trim()
-        }
+        answers: { questionOne: String(formData.get('questionOne') || '').trim() }
     };
 
-    const parsed = applicationSchema.safeParse({
-        ...payload,
-        skills: payload.skills
-    });
-    if (!parsed.success) {
-        throw new Error(parsed.error.issues[0]?.message || 'Please enter a valid email address before submitting.');
-    }
+    const parsed = applicationSchema.safeParse(payload);
+    if (!parsed.success) redirect(`/programs/${encodeURIComponent(programSlug)}/apply?error=submit-failed`);
 
     const session = await getSessionUser();
-    if (!session) {
-        throw new Error('Please log in before applying to a program.');
+    if (!session) redirect('/login');
+    if (session.profileId !== applicantId) redirect('/dashboard');
+
+    const trustedProfile = await getUserById(session.profileId);
+    if (!trustedProfile) redirect('/dashboard');
+
+    try {
+        await createApplication({
+            ...payload,
+            applicantId: session.profileId,
+            fullName: trustedProfile.fullName,
+            email: trustedProfile.email,
+            country: parsed.data.country,
+            timezone: trustedProfile.timezone || 'UTC',
+            education: parsed.data.education,
+            experience: parsed.data.experience,
+            motivation: parsed.data.motivation,
+            availability: 'SELF_PACED',
+            skills: parsed.data.skills.split(',').map((item) => item.trim()).filter(Boolean),
+        });
+    } catch (error) {
+        console.error('Application submission failed:', error);
+        redirect(`/programs/${encodeURIComponent(programSlug)}/apply?error=submit-failed`);
     }
 
-    const finalApplicantId = applicantId || session.profileId;
-    if (session.profileId !== finalApplicantId) throw new Error('You can only submit an application from your own account.');
-    const trustedProfile = await getUserById(session.profileId);
-    if (!trustedProfile) throw new Error('Your participant profile could not be found. Please contact support.');
-
-    const skills = String(parsed.data.skills)
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean);
-
-    await createApplication({
-        ...payload,
-        applicantId: finalApplicantId,
-        fullName: trustedProfile.fullName,
-        email: trustedProfile.email,
-        country: trustedProfile.country || parsed.data.country,
-        timezone: trustedProfile.timezone || parsed.data.timezone,
-        education: parsed.data.education,
-        experience: parsed.data.experience,
-        motivation: parsed.data.motivation,
-        availability: parsed.data.availability,
-        skills,
-    });
-
-    redirect('/dashboard');
+    redirect(`/application-submitted?program=${encodeURIComponent(programSlug)}`);
 }
