@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { BriefcaseBusiness, CheckCircle2, Globe2, GraduationCap, ShieldCheck, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -11,9 +12,22 @@ export default async function HomePage() {
     const certificatePrograms = allPrograms.filter((program) => !['DRAFT', 'ARCHIVED'].includes(program.status));
     const admin = getSupabaseAdminClient();
     const templateResult = admin && certificatePrograms.length
-        ? await admin.from('certificate_templates').select('program_id,template_name,certificate_title,issuer_name,signer_name,signer_title,primary_color,accent_color,show_on_homepage').in('program_id', certificatePrograms.map((program) => program.id))
+        ? await admin.from('certificate_templates').select('program_id,template_name,certificate_title,issuer_name,signer_name,signer_title,primary_color,accent_color,show_on_homepage,signature_image_path,stamp_image_path').in('program_id', certificatePrograms.map((program) => program.id))
         : { data: [], error: null };
     const templateMap = new Map((templateResult.data || []).map((template) => [template.program_id, template]));
+    const assetPreviews = new Map<string, { signatureUrl: string | null; stampUrl: string | null }>();
+    if (admin) {
+        await Promise.all((templateResult.data || []).map(async template => {
+            const [signature, stamp] = await Promise.all([
+                template.signature_image_path ? admin.storage.from('certificate-assets').createSignedUrl(template.signature_image_path, 3600) : Promise.resolve({ data: null, error: null }),
+                template.stamp_image_path ? admin.storage.from('certificate-assets').createSignedUrl(template.stamp_image_path, 3600) : Promise.resolve({ data: null, error: null })
+            ]);
+            assetPreviews.set(template.program_id, {
+                signatureUrl: signature.data?.signedUrl || null,
+                stampUrl: stamp.data?.signedUrl || null
+            });
+        }));
+    }
 
     return (
         <div>
@@ -144,13 +158,14 @@ export default async function HomePage() {
                             if (template && template.show_on_homepage === false) return null;
                             const primary = template?.primary_color || '#123b68';
                             const accent = template?.accent_color || '#c49a45';
+                            const assets = assetPreviews.get(program.id);
                             return (
                                 <article key={program.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white p-4 text-slate-900 shadow-xl">
                                     <div className="aspect-[1.414/1] p-2" style={{ border: '5px double ' + accent, background: '#fffdf7' }}>
                                         <div className="flex h-full flex-col items-center justify-between border p-3 text-center" style={{ borderColor: accent }}>
                                             <div><p className="text-[8px] font-black uppercase tracking-[0.22em]" style={{ color: primary }}>{template?.issuer_name || 'TIKSE TECH'}</p><div className="mx-auto my-2 h-px w-12" style={{ background: accent }}/><p className="text-[10px] font-black uppercase tracking-wider sm:text-xs" style={{ color: primary }}>{template?.certificate_title || 'Certificate of Completion'}</p></div>
                                             <div><p className="text-[7px] text-slate-500">This certificate is presented to</p><p className="mt-1 font-serif text-sm italic text-slate-800 sm:text-lg">Participant Name</p><p className="mt-2 max-w-[240px] text-[8px] font-semibold sm:text-[10px]" style={{ color: primary }}>{program.title}</p></div>
-                                            <div className="flex w-full items-end justify-between text-left"><div><p className="font-serif text-[10px] italic" style={{ color: primary }}>{template?.signer_name || 'Authorized Signatory'}</p><div className="mt-1 w-20 border-t border-slate-400"/><p className="mt-1 text-[6px] text-slate-500">{template?.signer_title || 'Authorized Signatory'}</p></div><p className="text-right text-[6px] text-slate-400">QR VERIFIED<br/>TT-CERTIFICATE</p></div>
+                                            <div className="flex w-full items-end justify-between text-left"><div>{assets?.signatureUrl ? <Image src={assets.signatureUrl} alt="Authorized certificate signature" width={100} height={30} unoptimized className="h-6 w-20 object-contain object-left"/> : <p className="font-serif text-[10px] italic" style={{ color: primary }}>{template?.signer_name || 'Authorized Signatory'}</p>}<div className="mt-1 w-20 border-t border-slate-400"/><p className="mt-1 text-[6px] text-slate-500">{template?.signer_title || 'Authorized Signatory'}</p></div><div className="flex flex-col items-end">{assets?.stampUrl ? <Image src={assets.stampUrl} alt="Official certificate stamp" width={48} height={48} unoptimized className="h-8 w-8 object-contain"/> : null}<p className="text-right text-[6px] text-slate-400">QR VERIFIED<br/>TT-CERTIFICATE</p></div></div>
                                         </div>
                                     </div>
                                     <div className="pt-4">
