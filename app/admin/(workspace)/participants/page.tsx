@@ -14,7 +14,7 @@ export default async function AdminParticipantsPage() {
   if (!admin) throw new Error("Supabase server credentials are not configured.");
 
   const [profilesResult, applicationsResult, enrollmentsResult, submissionsResult, certificatesResult, completionsResult, programsResult] = await Promise.all([
-    admin.from("profiles").select("id, full_name, email, country, role, created_at").eq("role", "PARTICIPANT").order("created_at", { ascending: false }),
+    admin.from("profiles").select("id, full_name, email, country, role, participant_number, account_status, created_at").eq("role", "PARTICIPANT").order("created_at", { ascending: false }),
     admin.from("applications").select("applicant_id, program_id, status, submitted_at"),
     admin.from("enrollments").select("participant_id, program_id, status, joined_at"),
     admin.from("assignment_submissions").select("applicant_id, status"),
@@ -54,6 +54,8 @@ export default async function AdminParticipantsPage() {
       name: profile.full_name || "",
       email: profile.email || "",
       country: profile.country || "",
+      participantNumber: profile.participant_number || "",
+      accountStatus: profile.account_status || "ACTIVE",
       joinedAt: profile.created_at || "",
       programs: [...new Set([...personApplications, ...personEnrollments].map((item) => programNames.get(item.program_id)).filter((name): name is string => Boolean(name)))],
       applicationStatuses: personApplications.map((item) => item.status),
