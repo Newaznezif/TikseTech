@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Globe2, Menu } from 'lucide-react';
 
@@ -16,7 +17,7 @@ export function SiteHeader() {
         <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
             <div className="container-shell flex items-center justify-between py-4">
                 <Link href="/" className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-lg font-bold text-white">T</div>
+                    <Image src="/logo.png" alt="TIKSE TECH logo" width={44} height={44} priority className="h-11 w-11 rounded-xl object-contain" />
                     <div>
                         <p className="text-lg font-black tracking-tight text-slate-900">TIKSE TECH</p>
                         <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Without borders</p>
