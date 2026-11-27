@@ -75,12 +75,14 @@ export async function loginUser(formData: FormData) {
             await supabase.auth.signOut();
             redirect('/login?error=profile-not-ready');
         }
+        if (['ADMIN', 'SUPER_ADMIN'].includes(String(profile.role || '').toUpperCase())) redirect('/admin');
         redirect('/dashboard');
     }
     if (process.env.NODE_ENV === 'production') redirect('/login?error=server-configuration');
     const profile = await getProfileByEmail(email);
     if (!profile) redirect('/login?error=invalid-credentials');
     await setSessionUser({ email: profile.email, role: profile.role, profileId: profile.id, name: profile.fullName });
+    if (['ADMIN', 'SUPER_ADMIN'].includes(String(profile.role || '').toUpperCase())) redirect('/admin');
     redirect('/dashboard');
 }
 
