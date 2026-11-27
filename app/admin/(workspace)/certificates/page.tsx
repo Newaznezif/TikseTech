@@ -13,7 +13,7 @@ type Template = {
   signature_image_path: string | null; stamp_image_path: string | null;
 };
 
-export default async function AdminCertificatesPage({ searchParams }: { searchParams?: Promise<{ template?: string }> }) {
+export default async function AdminCertificatesPage({ searchParams }: { searchParams?: Promise<{ template?: string; issued?: string; email?: string }> }) {
   const params = searchParams ? await searchParams : {};
   const session = await getSessionUser();
   if (!session) redirect('/admin/login');
@@ -73,6 +73,7 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
         <p className="mt-2 max-w-3xl text-slate-600">Design a distinct certificate for each course, configure its authorized signatory, preview the layout, and publish the design on the public homepage.</p>
       </div>
 
+      {params.issued === '1' ? <p role="status" className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Certificate issued successfully. {params.email === 'sent' ? 'The participant was emailed the PDF download and verification links.' : 'Email delivery was not confirmed. The certificate is available in the participant dashboard and admin records; check RESEND_API_KEY and EMAIL_FROM to enable email delivery.'}</p> : null}
       {params.template === 'saved' ? <p role="status" className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Certificate design saved successfully.</p> : null}
       {templateSchemaMissing ? <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><strong>Database migration required.</strong> Apply <code>supabase/migrations/011_participant_admin_and_certificate_assets.sql</code> in your Supabase SQL editor to activate certificate image storage.</div> : null}
 
