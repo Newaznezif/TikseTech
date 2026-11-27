@@ -21,6 +21,20 @@ CREATE TABLE IF NOT EXISTS public.certificate_templates (
     CONSTRAINT certificate_templates_accent_color_hex CHECK (accent_color ~ '^#[0-9A-Fa-f]{6}$')
 );
 
+
+ALTER TABLE public.profiles
+    ADD COLUMN IF NOT EXISTS participant_number text;
+
+UPDATE public.profiles
+SET participant_number = 'TT-P-' || upper(substr(replace(id::text, '-', ''), 1, 8))
+WHERE participant_number IS NULL OR participant_number = '';
+
+ALTER TABLE public.profiles
+    ALTER COLUMN participant_number SET DEFAULT ('TT-P-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8)));
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_participant_number
+    ON public.profiles(participant_number);
+
 ALTER TABLE public.certificate_templates ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "certificate_templates: public read showcased"
