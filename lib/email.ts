@@ -10,7 +10,7 @@ function escapeHtml(value: string) {
 export async function sendStatusEmail(input: StatusEmailInput): Promise<boolean> {
     const apiKey = process.env.RESEND_API_KEY;
     const from = process.env.EMAIL_FROM;
-    if (!apiKey || !from) return false;
+    if (!apiKey || !from || !appUrl) return false;
 
     const name = escapeHtml(input.name || 'Participant');
     const program = escapeHtml(input.programTitle || 'your program');
