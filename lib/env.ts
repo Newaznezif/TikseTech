@@ -6,4 +6,7 @@ export function getRequiredEnv(name: string) {
     return value;
 }
 
-export const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+// Production redirects must use the explicitly configured deployment domain.
+// Do not infer a hostname from Vercel or another hosting provider.
+export const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\\/+$/, '') ||
+    (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000');
