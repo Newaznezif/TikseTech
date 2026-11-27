@@ -4,13 +4,22 @@ import { Button } from '@/components/ui/button';
 
 export const metadata = { title: 'Login | TIKSE TECH', description: 'Login to your TIKSE TECH account.' };
 
-export default async function LoginPage({ searchParams }: { searchParams?: Promise<{ registered?: string }> }) {
+const loginMessages: Record<string, string> = {
+    'verify-email': 'Your email address is not verified yet. Open the verification email sent by TIKSE TECH, verify your address, then sign in again.',
+    'invalid-credentials': 'The email or password is incorrect. Check your details and try again.',
+    'profile-not-ready': 'Your account exists, but its participant profile is not ready. Contact platform support.',
+    'server-configuration': 'Sign-in is temporarily unavailable because the platform authentication service is not configured correctly.',
+};
+
+export default async function LoginPage({ searchParams }: { searchParams?: Promise<{ registered?: string; error?: string }> }) {
     const params = searchParams ? await searchParams : {};
+    const message = params.error ? loginMessages[params.error] : undefined;
     return <div className="container-shell py-20"><div className="mx-auto max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-soft">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Welcome back</p><h1 className="mt-4 text-3xl font-black text-slate-900">Login to TIKSE TECH</h1>
-        {params.registered==='1'?<p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">Your account has been created. Check your email for the verification link, then sign in.</p>:null}
-        <form action={loginUser} className="mt-8 space-y-5"><div><label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">Email address</label><input name="email" id="email" type="email" required className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 outline-none focus:border-blue-500" placeholder="name@example.com"/></div>
-        <div><label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">Password</label><input name="password" id="password" type="password" required className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 outline-none focus:border-blue-500" placeholder="••••••••"/></div><Button type="submit" className="w-full" variant="primary">Login</Button></form>
+        {params.registered === '1' ? <p role="status" className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">Your account has been created. Check your email for the verification link, then sign in.</p> : null}
+        {message ? <p role="alert" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">{message}</p> : null}
+        <form action={loginUser} className="mt-8 space-y-5"><div><label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">Email address</label><input name="email" id="email" type="email" autoComplete="email" required className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 outline-none focus:border-blue-500" placeholder="name@example.com"/></div>
+        <div><label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">Password</label><input name="password" id="password" type="password" autoComplete="current-password" required className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 outline-none focus:border-blue-500" placeholder="••••••••"/></div><Button type="submit" className="w-full" variant="primary">Login</Button></form>
         <p className="mt-6 text-sm text-slate-600">Don&apos;t have an account? <Link href="/register" className="font-semibold text-blue-700">Create one</Link></p>
     </div></div>;
 }
