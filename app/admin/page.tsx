@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { createProgram } from '@/actions/programs';
@@ -25,7 +26,7 @@ export default async function AdminDashboardPage() {
                 <p className="mt-2 text-slate-600">Signed in as {session?.name || 'Administrator'} · {session?.role || 'ADMIN'}</p>
             </div>
 
-            <div className="mb-8 flex flex-wrap gap-3"><a href="/admin/participants" className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white">Participant monitoring</a><a href="/admin/applications" className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Review applications</a><a href="/admin/challenges" className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-800">Manage challenge PDFs</a><a href="/admin/reviews" className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-800">Review assignments</a><a href="/admin/certificates" className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-800">Issue certificates</a></div>
+            <div className="mb-8 flex flex-wrap gap-3"><Link href="/admin/participants" className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white">Participant monitoring</Link><Link href="/admin/applications" className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Review applications</Link><Link href="/admin/challenges" className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-800">Manage challenge PDFs</Link><Link href="/admin/reviews" className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-800">Review assignments</Link><Link href="/admin/certificates" className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-800">Issue certificates</Link></div>
 
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
                 {[
