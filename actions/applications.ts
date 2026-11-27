@@ -69,7 +69,6 @@ export async function submitApplication(formData: FormData) {
         motivation: parsed.data.motivation,
         availability: parsed.data.availability,
         skills,
-        applicationId: `${programId}-${finalApplicantId}`
     });
 
     redirect('/dashboard');
