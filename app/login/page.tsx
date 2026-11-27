@@ -5,7 +5,8 @@ import { loginUser } from '@/actions/auth';
 export const metadata = { title: 'Participant Login | TIKSE TECH', description: 'Sign in to your TIKSE TECH participant account.' };
 
 const loginMessages: Record<string, string> = {
-    'verify-email': 'Your email address is not verified yet. Open the verification email sent by TIKSE TECH, verify your address, then sign in again.',
+    'verify-email': 'Your email address is not verified yet. Open the verification email sent by TIKSE TECH and complete verification on the TIKSE TECH website, then sign in again.',
+    'verification-failed': 'The verification link could not be completed or has expired. Request a new verification email and try again.',
     'invalid-credentials': 'The email or password is incorrect. Check your details and try again.',
     'profile-not-ready': 'Your account exists, but its participant profile is not ready. Contact platform support.',
     'server-configuration': 'Sign-in is temporarily unavailable because the platform authentication service is not configured correctly.',
