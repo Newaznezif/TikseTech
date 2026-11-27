@@ -7,10 +7,12 @@ import { SiteHeader } from '@/components/site-header';
 export const metadata: Metadata = {
     title: 'TIKSE TECH | Global Remote Technology Programs',
     description: 'TIKSE TECH connects young tech talent with remote programs, practical projects, mentorship, and global opportunities.',
+    icons: { icon: '/logo.png', apple: '/logo.png' },
     openGraph: {
         title: 'TIKSE TECH',
         description: 'Build Skills. Gain Experience. Connect Globally.',
-        type: 'website'
+        type: 'website',
+        images: ['/logo.png']
     }
 };
 
