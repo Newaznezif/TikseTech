@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
@@ -16,14 +17,16 @@ export const metadata: Metadata = {
     }
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+    const pathname = (await headers()).get('x-pathname') || '';
+    const isAdminLogin = pathname === '/admin/login';
     return (
         <html lang="en">
-            <body className="bg-slate-50 text-slate-900 antialiased">
+            <body className={isAdminLogin ? 'bg-[#07111f] text-white antialiased' : 'bg-slate-50 text-slate-900 antialiased'}>
                 <div className="min-h-screen">
-                    <SiteHeader />
-                    <main>{children}</main>
-                    <SiteFooter />
+                    {!isAdminLogin ? <SiteHeader /> : null}
+                    <div>{children}</div>
+                    {!isAdminLogin ? <SiteFooter /> : null}
                 </div>
             </body>
         </html>
