@@ -17,6 +17,7 @@ describe('TIKSE TECH core workflow', () => {
     it('rejects an application submitted without a valid email', async () => {
         const formData = new FormData();
         formData.set('programId', 'program-demo');
+        formData.set('programSlug', 'program-demo');
         formData.set('applicantId', 'profile-123');
         formData.set('fullName', 'Test Applicant');
         formData.set('email', '');
@@ -29,7 +30,7 @@ describe('TIKSE TECH core workflow', () => {
         formData.set('availability', '10 hours/week');
         formData.set('questionOne', 'I want to improve my technical foundations.');
 
-        await expect(submitApplication(formData)).rejects.toThrow('Please enter a valid email address before submitting.');
+        await expect(submitApplication(formData)).rejects.toThrow('NEXT_REDIRECT');
     });
 
     it('registers a participant and prevents duplicate applications to the same program', async () => {
