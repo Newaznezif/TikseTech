@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 type ParticipantRow = {
@@ -28,7 +29,7 @@ function statusStyle(status: string) {
 }
 
 function readable(value: string) {
-  return value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value.replaceAll("_", " ").toLowerCase().replace(/\\b\\w/g, (letter) => letter.toUpperCase());
 }
 
 export function ParticipantsTable({ participants }: { participants: ParticipantRow[] }) {
@@ -54,19 +55,8 @@ export function ParticipantsTable({ participants }: { participants: ParticipantR
   return (
     <section className="mt-8">
       <div className="mb-4 flex flex-col gap-3 lg:flex-row">
-        <input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search name, email, country, or program..."
-          aria-label="Search participants"
-          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-        />
-        <select
-          value={filter}
-          onChange={(event) => setFilter(event.target.value as (typeof filters)[number])}
-          aria-label="Filter participants by status"
-          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-500"
-        >
+        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, email, country, or program..." aria-label="Search participants" className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        <select value={filter} onChange={(event) => setFilter(event.target.value as (typeof filters)[number])} aria-label="Filter participants by status" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-500">
           {filters.map((item) => <option key={item} value={item}>{item === "ALL" ? "All participants" : readable(item)}</option>)}
         </select>
         <div className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600">{visible.length} of {participants.length} participants</div>
@@ -74,7 +64,7 @@ export function ParticipantsTable({ participants }: { participants: ParticipantR
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1050px] text-left text-sm">
+          <table className="w-full min-w-[1160px] text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-5 py-4 font-semibold">Participant</th>
@@ -84,6 +74,7 @@ export function ParticipantsTable({ participants }: { participants: ParticipantR
                 <th className="px-5 py-4 font-semibold">Assignments</th>
                 <th className="px-5 py-4 font-semibold">Certificates</th>
                 <th className="px-5 py-4 font-semibold">Joined</th>
+                <th className="px-5 py-4 font-semibold">Record</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -95,21 +86,15 @@ export function ParticipantsTable({ participants }: { participants: ParticipantR
                     <p className="mt-1 text-xs text-slate-500">{person.country || "Country not provided"}</p>
                   </td>
                   <td className="max-w-[220px] px-5 py-4 text-slate-700">{person.programs.length ? person.programs.join(", ") : <span className="text-slate-400">No program yet</span>}</td>
-                  <td className="px-5 py-4">
-                    <div className="flex flex-wrap gap-1.5">
-                      {person.applicationStatuses.length ? person.applicationStatuses.map((status, index) => <span key={status + index} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyle(status)}`}>{readable(status)}</span>) : <span className="text-slate-400">No application</span>}
-                    </div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyle(person.overallStatus)}`}>{readable(person.overallStatus)}</span>
-                    {person.enrollmentStatuses.length > 1 ? <p className="mt-1 text-xs text-slate-500">{person.enrollmentStatuses.map(readable).join(", ")}</p> : null}
-                  </td>
+                  <td className="px-5 py-4"><div className="flex flex-wrap gap-1.5">{person.applicationStatuses.length ? person.applicationStatuses.map((status, index) => <span key={status + index} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyle(status)}`}>{readable(status)}</span>) : <span className="text-slate-400">No application</span>}</div></td>
+                  <td className="px-5 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyle(person.overallStatus)}`}>{readable(person.overallStatus)}</span>{person.enrollmentStatuses.length > 1 ? <p className="mt-1 text-xs text-slate-500">{person.enrollmentStatuses.map(readable).join(", ")}</p> : null}</td>
                   <td className="px-5 py-4 text-slate-700">{person.assignmentsAccepted}/{person.assignmentsTotal} accepted</td>
                   <td className="px-5 py-4 text-slate-700">{person.certificates}</td>
                   <td className="whitespace-nowrap px-5 py-4 text-slate-500">{person.joinedAt ? new Date(person.joinedAt).toLocaleDateString() : "—"}</td>
+                  <td className="px-5 py-4"><Link href={`/admin/participants/${person.id}`} className="whitespace-nowrap font-semibold text-blue-700 hover:text-blue-900">View record →</Link></td>
                 </tr>
               ))}
-              {!visible.length ? <tr><td colSpan={7} className="px-5 py-14 text-center text-slate-500">No participants match this search or filter.</td></tr> : null}
+              {!visible.length ? <tr><td colSpan={8} className="px-5 py-14 text-center text-slate-500">No participants match this search or filter.</td></tr> : null}
             </tbody>
           </table>
         </div>
