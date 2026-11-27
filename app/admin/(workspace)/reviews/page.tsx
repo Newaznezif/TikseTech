@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { reviewAssignment } from '@/actions/assignments';
 import { getSessionUser, hasRequiredRole } from '@/lib/session';
-import { getSupabaseAdminClient } from '@/lib/supabase';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 export const metadata = { title: 'Assignment reviews | TIKSE TECH' };
 
@@ -9,8 +9,7 @@ export default async function AdminReviewsPage() {
     const session = await getSessionUser();
     if (!session) redirect('/login');
     if (!hasRequiredRole(session, ['ADMIN', 'SUPER_ADMIN'])) redirect('/dashboard');
-    const admin = getSupabaseAdminClient();
-    if (!admin) throw new Error('Supabase server credentials are not configured.');
+    const admin = await createSupabaseServerClient();
     const { data: submissions, error } = await admin.from('assignment_submissions').select('*').order('submitted_at', { ascending: true });
     if (error) throw new Error(error.message);
     const applicantIds = [...new Set((submissions || []).map(s=>s.applicant_id))];
