@@ -20,7 +20,7 @@ function Status({ value }: { value: string }) {
 export default async function ParticipantRecordPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams?: Promise<{ updated?: string }> }) {
   const query = searchParams ? await searchParams : {};
   const session = await getSessionUser();
-  if (!session) redirect("/login");
+  if (!session) redirect("/admin/login");
   if (!hasRequiredRole(session, ["ADMIN", "SUPER_ADMIN"])) redirect("/dashboard");
   const { id } = await params;
   const admin = getSupabaseAdminClient();
