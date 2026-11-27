@@ -2,9 +2,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Globe2, Menu } from 'lucide-react';
 
+import { AccountMenu } from '@/components/account-menu';
 import { buttonVariants } from '@/components/ui/button';
+import { getSessionUser, hasRequiredRole } from '@/lib/session';
 
-export function SiteHeader() {
+export async function SiteHeader() {
+    const session = await getSessionUser();
+    const dashboardHref = hasRequiredRole(session, ['ADMIN', 'SUPER_ADMIN']) ? '/admin' : '/dashboard';
     const navItems = [
         { href: '/about', label: 'About' },
         { href: '/programs', label: 'Programs' },
@@ -37,12 +41,16 @@ export function SiteHeader() {
                         <Globe2 className="h-4 w-4 text-blue-600" />
                         Remote — Worldwide
                     </div>
-                    <Link href="/login" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-                        Login
-                    </Link>
-                    <Link href="/register" className={buttonVariants({ variant: 'primary', size: 'sm' })}>
-                        Join now <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
+                    {session ? (
+                        <AccountMenu name={session.name} email={session.email} role={session.role} dashboardHref={dashboardHref} />
+                    ) : (
+                        <>
+                            <Link href="/login" className={buttonVariants({ variant: 'outline', size: 'sm' })}>Login</Link>
+                            <Link href="/register" className={buttonVariants({ variant: 'primary', size: 'sm' })}>
+                                Join now <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </>
+                    )}
                     <button className="rounded-lg border border-slate-200 p-2 lg:hidden" aria-label="Toggle menu">
                         <Menu className="h-4 w-4" />
                     </button>
