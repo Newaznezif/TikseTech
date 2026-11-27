@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 export default function Error({ reset }: { reset: () => void }) {
     return (
         <main className="min-h-[65vh] bg-slate-50 px-6 py-20 text-slate-900">
@@ -21,12 +23,12 @@ export default function Error({ reset }: { reset: () => void }) {
                     >
                         Reload this section
                     </button>
-                    <a
+                    <Link
                         href="/"
                         className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
                         Go to homepage
-                    </a>
+                    </Link>
                 </div>
             </section>
         </main>
