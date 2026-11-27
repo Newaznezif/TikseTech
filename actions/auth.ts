@@ -6,6 +6,7 @@ import { getSupabaseAdminClient, isSupabaseConfigured, shouldUseLocalStore } fro
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { registerSchema } from '@/lib/validation';
 import { clearSessionUser, setSessionUser } from '@/lib/session';
+import { appUrl } from '@/lib/env';
 
 export async function registerUser(formData: FormData) {
     const payload = {
@@ -17,11 +18,15 @@ export async function registerUser(formData: FormData) {
     if (!parsed.success) redirect('/register?error=invalid-details');
 
     if (isSupabaseConfigured() && !shouldUseLocalStore()) {
+        if (!appUrl) redirect('/register?error=server-configuration');
         const supabase = await createSupabaseServerClient();
         const { data, error } = await supabase.auth.signUp({
             email: parsed.data.email,
             password: parsed.data.password,
-            options: { data: { full_name: parsed.data.fullName } }
+            options: {
+                data: { full_name: parsed.data.fullName },
+                emailRedirectTo: appUrl.replace(/\\/+$/, '') + '/auth/callback'
+            }
         });
         if (error) {
             if (error.message.toLowerCase().includes('rate limit') || error.code === 'over_email_send_rate_limit') {
