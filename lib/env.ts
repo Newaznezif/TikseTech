@@ -6,7 +6,10 @@ export function getRequiredEnv(name: string) {
     return value;
 }
 
-// Production redirects must use the explicitly configured deployment domain.
-// Do not infer a hostname from Vercel or another hosting provider.
-export const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '') ||
-    (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000');
+// The production origin is fixed to the active AletCloud deployment.
+// A stale Vercel environment variable can never override participant links.
+const productionAppUrl = 'https://tikse-tech.app.aletcloud.com';
+
+export const appUrl = process.env.NODE_ENV === 'production'
+    ? productionAppUrl
+    : (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '') || 'http://localhost:3000');
