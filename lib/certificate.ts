@@ -26,7 +26,9 @@ export async function generateCertificatePdf({
     completedAt,
     verificationCode,
     certificateNumber,
-    design
+    design,
+    signatureImage,
+    stampImage
 }: {
     participantName: string;
     programName: string;
@@ -69,6 +71,15 @@ export async function generateCertificatePdf({
         doc.fillColor('#475569').font('Helvetica').fontSize(10).text(`CATEGORY: ${category.toUpperCase()}     •     DURATION: ${duration}`, 80, 365, { width: 680, align: 'center' });
         doc.fillColor('#475569').fontSize(10).text(`COMPLETED: ${new Date(completedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: 'numeric' })}`, 80, 385, { width: 680, align: 'center' });
         doc.fillColor(primary).font('Times-Italic').fontSize(22).text(signatureText, 88, 440, { width: 210, align: 'center' });
+        if (signatureImage) {
+            try { doc.image(signatureImage, 112, 424, { fit: [160, 42], align: 'center', valign: 'center' }); }
+            catch { doc.fillColor(primary).font('Times-Italic').fontSize(22).text(signatureText, 88, 440, { width: 210, align: 'center' }); }
+        } else {
+            doc.fillColor(primary).font('Times-Italic').fontSize(22).text(signatureText, 88, 440, { width: 210, align: 'center' });
+        }
+        if (stampImage) {
+            try { doc.image(stampImage, 535, 420, { fit: [92, 92], align: 'center', valign: 'center' }); } catch { /* retain the certificate without a malformed stamp */ }
+        }
         doc.moveTo(100, 472).lineTo(286, 472).lineWidth(1).strokeColor('#64748b').stroke();
         doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(10).text(signer, 88, 480, { width: 210, align: 'center' });
         doc.fillColor('#64748b').font('Helvetica').fontSize(9).text(signerTitle, 88, 495, { width: 210, align: 'center' });
