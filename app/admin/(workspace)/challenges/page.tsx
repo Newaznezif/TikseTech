@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createChallengeDocument } from '@/actions/assignments';
 import { getSessionUser, hasRequiredRole } from '@/lib/session';
-import { getSupabaseAdminClient } from '@/lib/supabase';
-import { listPrograms } from '@/lib/store';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 export const metadata = { title: 'Challenge library | TIKSE TECH' };
 
@@ -10,12 +9,14 @@ export default async function AdminChallengesPage() {
     const session = await getSessionUser();
     if (!session) redirect('/login');
     if (!hasRequiredRole(session, ['ADMIN', 'SUPER_ADMIN'])) redirect('/dashboard');
-    const admin = getSupabaseAdminClient();
-    if (!admin) throw new Error('Supabase server credentials are not configured.');
-    const [programs, result] = await Promise.all([
-        listPrograms(), admin.from('challenge_documents').select('*').order('created_at', { ascending: false })
+    const admin = await createSupabaseServerClient();
+    const [programsResult, result] = await Promise.all([
+        admin.from('programs').select('id, title').order('created_at', { ascending: false }),
+        admin.from('challenge_documents').select('*').order('created_at', { ascending: false })
     ]);
+    if (programsResult.error) throw new Error('Programs could not be loaded: ' + programsResult.error.message);
     if (result.error) throw new Error(result.error.message);
+    const programs = programsResult.data || [];
     const challenges = await Promise.all((result.data || []).map(async (item) => {
         const signed = await admin.storage.from('challenge-pdfs').createSignedUrl(item.file_path, 300);
         return { ...item, downloadUrl: signed.data?.signedUrl || '' };
