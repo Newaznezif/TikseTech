@@ -74,7 +74,7 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
       </div>
 
       {params.template === 'saved' ? <p role="status" className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Certificate design saved successfully.</p> : null}
-      {templateSchemaMissing ? <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><strong>Database migration required.</strong> Apply <code>supabase/migrations/010_course_certificate_templates.sql</code> in your Supabase SQL editor to activate template storage.</div> : null}
+      {templateSchemaMissing ? <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><strong>Database migration required.</strong> Apply <code>supabase/migrations/011_participant_admin_and_certificate_assets.sql</code> in your Supabase SQL editor to activate certificate image storage.</div> : null}
 
       <section>
         <div className="mb-5 flex items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">Design system</p><h2 className="mt-1 text-2xl font-black text-slate-950">Course certificate designs</h2></div><span className="text-sm text-slate-500">{programs.length} courses</span></div>
