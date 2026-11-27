@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import { markCompletedAction, saveCertificateTemplateAction } from '@/actions/certificates';
 import { getSessionUser, hasRequiredRole } from '@/lib/session';
-import { getSupabaseAdminClient } from '@/lib/supabase';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 export const metadata = { title: 'Certificate studio | TIKSE TECH' };
 
@@ -18,8 +18,7 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
   const session = await getSessionUser();
   if (!session) redirect('/admin/login');
   if (!hasRequiredRole(session, ['ADMIN', 'SUPER_ADMIN'])) redirect('/dashboard');
-  const admin = getSupabaseAdminClient();
-  if (!admin) throw new Error('Supabase server credentials are not configured.');
+  const admin = await createSupabaseServerClient();
 
   const [programsResult, templatesResult, enrollmentsResult, acceptedResult, certificatesResult] = await Promise.all([
     admin.from('programs').select('id,title,category,duration').order('created_at', { ascending: false }),
