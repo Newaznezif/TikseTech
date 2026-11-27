@@ -8,6 +8,8 @@ type ParticipantRow = {
   name: string;
   email: string;
   country: string;
+  participantNumber: string;
+  accountStatus: string;
   joinedAt: string;
   programs: string[];
   applicationStatuses: string[];
@@ -83,7 +85,7 @@ export function ParticipantsTable({ participants }: { participants: ParticipantR
                   <td className="px-5 py-4">
                     <p className="font-semibold text-slate-900">{person.name || "Name not provided"}</p>
                     <p className="mt-1 text-xs text-slate-500">{person.email}</p>
-                    <p className="mt-1 text-xs text-slate-500">{person.country || "Country not provided"}</p>
+                    <p className="mt-1 text-xs text-slate-500">{person.country || "Country not provided"}</p><p className="mt-1 font-mono text-[11px] text-slate-500">{person.participantNumber || "ID pending"}</p><span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${person.accountStatus === "ACTIVE" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>{person.accountStatus}</span>
                   </td>
                   <td className="max-w-[220px] px-5 py-4 text-slate-700">{person.programs.length ? person.programs.join(", ") : <span className="text-slate-400">No program yet</span>}</td>
                   <td className="px-5 py-4"><div className="flex flex-wrap gap-1.5">{person.applicationStatuses.length ? person.applicationStatuses.map((status, index) => <span key={status + index} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyle(status)}`}>{readable(status)}</span>) : <span className="text-slate-400">No application</span>}</div></td>
