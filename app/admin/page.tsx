@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { createProgram } from '@/actions/programs';
 import { getSessionUser, hasRequiredRole } from '@/lib/session';
-import { getAdminStats } from '@/lib/store';
+import { getAdminStats, listPrograms } from '@/lib/store';
 
 export default async function AdminDashboardPage() {
     const session = await getSessionUser();
@@ -15,7 +15,7 @@ export default async function AdminDashboardPage() {
         redirect('/dashboard');
     }
 
-    const stats = await getAdminStats();
+    const [stats, programs] = await Promise.all([getAdminStats(), listPrograms()]);
 
     return (
         <div className="container-shell py-20">
@@ -45,9 +45,8 @@ export default async function AdminDashboardPage() {
                 <div className="card-surface p-6">
                     <h2 className="text-xl font-bold text-slate-900">Programs</h2>
                     <ul className="mt-5 space-y-3 text-slate-700">
-                        <li>Cybersecurity Internship Program</li>
-                        <li>Software Development Internship</li>
-                        <li>Computer Networking Program</li>
+                        {programs.map((program) => <li key={program.id} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0"><span>{program.title}</span><span className="text-xs font-semibold text-slate-500">{program.status}</span></li>)}
+                        {!programs.length ? <li className="text-sm text-slate-500">No programs created yet.</li> : null}
                     </ul>
                 </div>
                 <div className="card-surface p-6">

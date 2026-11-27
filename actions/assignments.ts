@@ -140,7 +140,7 @@ export async function reviewAssignment(formData: FormData) {
     if (participantResult.data?.email && programResult.data?.title) {
         const { sendStatusEmail } = await import('@/lib/email');
         await sendStatusEmail({ to: participantResult.data.email, name: participantResult.data.full_name,
-            subject: 'TIKSE TECH assignment review update', programTitle: programResult.data.title, status, feedback });
+            subject: 'TIKSE TECH assignment review update', programTitle: programResult.data.title, status, feedback, kind: 'assignment', score });
     }
     revalidatePath('/admin/reviews');
     revalidatePath('/dashboard/assignments');
