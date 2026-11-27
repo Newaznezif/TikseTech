@@ -52,7 +52,7 @@ export default async function ProgramDetailsPage({ params }: { params: Promise<{
                         <div className="card-surface p-6">
                             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Internship Community</p>
                             <p className="mt-4 text-slate-700">
-                                Detailed internship guidelines and weekly task instructions are provided through the official TIKSE TECH community platform after participants are accepted.
+                                Project guidelines, milestone instructions, and submission deadlines are provided through the official TIKSE TECH community platform after participants are accepted.
                             </p>
                         </div>
                     </div>
@@ -106,7 +106,7 @@ export default async function ProgramDetailsPage({ params }: { params: Promise<{
                                 </>
                             ) : (
                                 <>
-                                    <p className="mt-3 text-slate-700">Detailed manuals, weekly task instructions, announcements, and discussions are delivered through the official TIKSE TECH community platform after acceptance.</p>
+                                    <p className="mt-3 text-slate-700">Project manuals, practical guidelines, submission deadlines, announcements, and discussions are delivered through the official TIKSE TECH community platform after acceptance.</p>
                                     <p className="mt-2 text-sm text-slate-500">Community access is limited to participants who are accepted, enrolled, or active.</p>
                                 </>
                             )}
