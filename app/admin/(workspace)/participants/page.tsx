@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser, hasRequiredRole } from "@/lib/session";
-import { getSupabaseAdminClient } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { ParticipantsTable } from "@/components/admin/participants-table";
 
 export const metadata = { title: "Participant monitoring | TIKSE TECH" };
@@ -10,8 +10,7 @@ export default async function AdminParticipantsPage() {
   if (!session) redirect("/login");
   if (!hasRequiredRole(session, ["ADMIN", "SUPER_ADMIN"])) redirect("/dashboard");
 
-  const admin = getSupabaseAdminClient();
-  if (!admin) throw new Error("Supabase server credentials are not configured.");
+  const admin = await createSupabaseServerClient();
 
   const [profilesResult, applicationsResult, enrollmentsResult, submissionsResult, certificatesResult, completionsResult, programsResult] = await Promise.all([
     admin.from("profiles").select("id, full_name, email, country, role, participant_number, account_status, created_at").eq("role", "PARTICIPANT").order("created_at", { ascending: false }),
