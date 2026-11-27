@@ -9,6 +9,7 @@ const loginMessages: Record<string, string> = {
     'invalid-credentials': 'The email or password is incorrect. Check your details and try again.',
     'profile-not-ready': 'Your account exists, but its participant profile is not ready. Contact platform support.',
     'server-configuration': 'Sign-in is temporarily unavailable because the platform authentication service is not configured correctly.',
+    'account-suspended': 'This participant account is currently suspended. Contact TIKSE TECH support if you believe this is an error.',
 };
 
 export default async function LoginPage({ searchParams }: { searchParams?: Promise<{ registered?: string; error?: string }> }) {
