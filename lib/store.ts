@@ -750,15 +750,17 @@ export async function createCertificateForProgram(programId: string, participant
             throw new Error('Supabase admin client is unavailable.');
         }
 
-        const [programResult, participantResult, enrollmentResult] = await Promise.all([
+        const [programResult, participantResult, enrollmentResult, templateResult] = await Promise.all([
             admin.from('programs').select('*').eq('id', programId).maybeSingle(),
             admin.from('profiles').select('*').eq('id', participantId).maybeSingle(),
-            admin.from('enrollments').select('*').eq('program_id', programId).eq('participant_id', participantId).maybeSingle()
+            admin.from('enrollments').select('*').eq('program_id', programId).eq('participant_id', participantId).maybeSingle(),
+            admin.from('certificate_templates').select('certificate_title').eq('program_id', programId).maybeSingle()
         ]);
 
         if (programResult.error) throw programResult.error;
         if (participantResult.error) throw participantResult.error;
         if (enrollmentResult.error) throw enrollmentResult.error;
+        if (templateResult.error && templateResult.error.code !== '42P01') throw templateResult.error;
 
         const program = programResult.data ? mapDbProgram(programResult.data) : null;
         const participant = participantResult.data ? mapDbProfile(participantResult.data) : null;
@@ -776,7 +778,7 @@ export async function createCertificateForProgram(programId: string, participant
             participant_id: participantId,
             program_id: programId,
             cohort_id: null,
-            certificate_title: 'Certificate of Completion',
+            certificate_title: templateResult.data?.certificate_title || 'Certificate of Completion',
             issued_at: new Date().toISOString(),
             completed_at: enrollment.completedAt || new Date().toISOString(),
             status: 'ACTIVE',
