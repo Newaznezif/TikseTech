@@ -34,13 +34,18 @@ export async function registerUser(formData: FormData) {
             }
             redirect('/register?error=registration-failed');
         }
+
         const userId = data.user?.id;
         const adminClient = getSupabaseAdminClient();
         if (userId && adminClient) {
             const { error: profileError } = await adminClient.from('profiles').upsert({
-                id: userId, auth_user_id: userId, full_name: parsed.data.fullName,
-                email: parsed.data.email, role: 'PARTICIPANT', country: 'Ethiopia',
-                timezone: 'Africa/Addis_Ababa', created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+                auth_user_id: userId,
+                full_name: parsed.data.fullName,
+                email: parsed.data.email,
+                role: 'PARTICIPANT',
+                country: 'Ethiopia',
+                timezone: 'Africa/Addis_Ababa',
+                updated_at: new Date().toISOString()
             }, { onConflict: 'auth_user_id' });
             if (profileError) redirect('/register?error=profile-setup');
         } else if (userId) {
@@ -76,12 +81,77 @@ export async function loginUser(formData: FormData) {
             }
             redirect(loginPath + '?error=invalid-credentials');
         }
-        const { data: profile, error: profileError } = await supabase.from('profiles')
-            .select('id, email, full_name, role, account_status').eq('auth_user_id', data.user.id).maybeSingle();
-        if (profileError || !profile) {
+
+        let profile: {
+            id: string;
+            email: string;
+            full_name: string;
+            role: string;
+            account_status?: string | null;
+        } | null = null;
+
+        const { data: visibleProfile, error: profileError } = await supabase.from('profiles')
+            .select('id, email, full_name, role, account_status')
+            .eq('auth_user_id', data.user.id)
+            .maybeSingle();
+
+        if (!profileError && visibleProfile) {
+            profile = visibleProfile;
+        } else if (!adminPortal) {
+            // Repair legacy accounts created before auth_user_id was consistently linked.
+            // The service-role client is required because this repair must bypass participant RLS.
+            const admin = getSupabaseAdminClient();
+            if (admin) {
+                const { data: linkedProfile } = await admin.from('profiles')
+                    .select('id, email, full_name, role, account_status, auth_user_id')
+                    .eq('auth_user_id', data.user.id)
+                    .maybeSingle();
+
+                if (linkedProfile) {
+                    profile = linkedProfile;
+                } else {
+                    const { data: legacyProfile } = await admin.from('profiles')
+                        .select('id, email, full_name, role, account_status, auth_user_id')
+                        .eq('email', data.user.email || email)
+                        .maybeSingle();
+
+                    if (legacyProfile?.role === 'PARTICIPANT' && !legacyProfile.auth_user_id) {
+                        const { data: repairedProfile, error: repairError } = await admin.from('profiles')
+                            .update({
+                                auth_user_id: data.user.id,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', legacyProfile.id)
+                            .is('auth_user_id', null)
+                            .select('id, email, full_name, role, account_status')
+                            .maybeSingle();
+                        if (!repairError && repairedProfile) profile = repairedProfile;
+                    } else if (!legacyProfile) {
+                        const metadataName = typeof data.user.user_metadata?.full_name === 'string'
+                            ? data.user.user_metadata.full_name.trim()
+                            : '';
+                        const { data: createdProfile, error: createError } = await admin.from('profiles')
+                            .insert({
+                                auth_user_id: data.user.id,
+                                full_name: metadataName || (data.user.email || email).split('@')[0],
+                                email: data.user.email || email,
+                                role: 'PARTICIPANT',
+                                country: 'Ethiopia',
+                                timezone: 'Africa/Addis_Ababa'
+                            })
+                            .select('id, email, full_name, role, account_status')
+                            .single();
+                        if (!createError && createdProfile) profile = createdProfile;
+                    }
+                }
+            }
+        }
+
+        if (!profile) {
             await supabase.auth.signOut();
             redirect(loginPath + '?error=profile-not-ready');
         }
+
         const isAdministrator = ['ADMIN', 'SUPER_ADMIN'].includes(String(profile.role || '').toUpperCase());
         if (!isAdministrator && String(profile.account_status || 'ACTIVE') === 'SUSPENDED') {
             await supabase.auth.signOut();
