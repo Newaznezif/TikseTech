@@ -2,7 +2,7 @@ import Link from "next/link";
 import { saveParticipantAdminAction } from "@/actions/participants";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser, hasRequiredRole } from "@/lib/session";
-import { getSupabaseAdminClient } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export const metadata = { title: "Participant record | TIKSE TECH" };
 
@@ -23,8 +23,7 @@ export default async function ParticipantRecordPage({ params, searchParams }: { 
   if (!session) redirect("/admin/login");
   if (!hasRequiredRole(session, ["ADMIN", "SUPER_ADMIN"])) redirect("/dashboard");
   const { id } = await params;
-  const admin = getSupabaseAdminClient();
-  if (!admin) throw new Error("Supabase server credentials are not configured.");
+  const admin = await createSupabaseServerClient();
 
   const [profileResult, applicationsResult, enrollmentsResult, submissionsResult, certificatesResult, completionsResult] = await Promise.all([
     admin.from("profiles").select("id, full_name, email, country, timezone, short_bio, education, experience, skills, participant_number, account_status, github, linkedin, portfolio, website, created_at").eq("id", id).eq("role", "PARTICIPANT").maybeSingle(),
