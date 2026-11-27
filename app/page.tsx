@@ -3,9 +3,17 @@ import { BriefcaseBusiness, CheckCircle2, Globe2, GraduationCap, ShieldCheck, Us
 
 import { Button } from '@/components/ui/button';
 import { listPrograms } from '@/lib/store';
+import { getSupabaseAdminClient } from '@/lib/supabase';
 
 export default async function HomePage() {
-    const programs = (await listPrograms()).slice(0, 3);
+    const allPrograms = await listPrograms();
+    const programs = allPrograms.filter((program) => ['OPEN', 'IN_PROGRESS'].includes(program.status)).slice(0, 3);
+    const certificatePrograms = allPrograms.filter((program) => !['DRAFT', 'ARCHIVED'].includes(program.status));
+    const admin = getSupabaseAdminClient();
+    const templateResult = admin && certificatePrograms.length
+        ? await admin.from('certificate_templates').select('program_id,template_name,certificate_title,issuer_name,signer_name,signer_title,primary_color,accent_color,show_on_homepage').in('program_id', certificatePrograms.map((program) => program.id))
+        : { data: [], error: null };
+    const templateMap = new Map((templateResult.data || []).map((template) => [template.program_id, template]));
 
     return (
         <div>
@@ -120,6 +128,43 @@ export default async function HomePage() {
                             <p className="mt-3 text-sm text-slate-600">{text}</p>
                         </div>
                     ))}
+                </div>
+            </section>
+
+            <section className="bg-[#08182d] py-20 text-white">
+                <div className="container-shell">
+                    <div className="mb-10 max-w-3xl">
+                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">Certificate gallery</p>
+                        <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">See what you can earn with every course</h2>
+                        <p className="mt-4 text-slate-300">Each TIKSE TECH course has its own certificate design. Issued certificates include an authorized signatory, unique certificate ID, and public QR verification.</p>
+                    </div>
+                    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                        {certificatePrograms.map((program) => {
+                            const template = templateMap.get(program.id);
+                            if (template && template.show_on_homepage === false) return null;
+                            const primary = template?.primary_color || '#123b68';
+                            const accent = template?.accent_color || '#c49a45';
+                            return (
+                                <article key={program.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white p-4 text-slate-900 shadow-xl">
+                                    <div className="aspect-[1.414/1] p-2" style={{ border: '5px double ' + accent, background: '#fffdf7' }}>
+                                        <div className="flex h-full flex-col items-center justify-between border p-3 text-center" style={{ borderColor: accent }}>
+                                            <div><p className="text-[8px] font-black uppercase tracking-[0.22em]" style={{ color: primary }}>{template?.issuer_name || 'TIKSE TECH'}</p><div className="mx-auto my-2 h-px w-12" style={{ background: accent }}/><p className="text-[10px] font-black uppercase tracking-wider sm:text-xs" style={{ color: primary }}>{template?.certificate_title || 'Certificate of Completion'}</p></div>
+                                            <div><p className="text-[7px] text-slate-500">This certificate is presented to</p><p className="mt-1 font-serif text-sm italic text-slate-800 sm:text-lg">Participant Name</p><p className="mt-2 max-w-[240px] text-[8px] font-semibold sm:text-[10px]" style={{ color: primary }}>{program.title}</p></div>
+                                            <div className="flex w-full items-end justify-between text-left"><div><p className="font-serif text-[10px] italic" style={{ color: primary }}>{template?.signer_name || 'Authorized Signatory'}</p><div className="mt-1 w-20 border-t border-slate-400"/><p className="mt-1 text-[6px] text-slate-500">{template?.signer_title || 'Authorized Signatory'}</p></div><p className="text-right text-[6px] text-slate-400">QR VERIFIED<br/>TT-CERTIFICATE</p></div>
+                                        </div>
+                                    </div>
+                                    <div className="pt-4">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-700">{program.category}</p>
+                                        <h3 className="mt-1 font-bold text-slate-950">{program.title}</h3>
+                                        <p className="mt-1 text-xs text-slate-500">{template?.template_name || 'TIKSE TECH Classic design'} · {program.duration}</p>
+                                        <Link href={'/programs/' + program.slug} className="mt-3 inline-flex text-sm font-semibold text-blue-700 hover:text-blue-900">Explore course →</Link>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                    {!certificatePrograms.length ? <p className="rounded-xl border border-white/15 p-8 text-center text-slate-300">Course certificate designs will appear here as programs are published.</p> : null}
+                    <p className="mt-6 text-xs text-slate-400">Preview designs are illustrative. Official credentials are generated only after completion and authorized issuance.</p>
                 </div>
             </section>
 
