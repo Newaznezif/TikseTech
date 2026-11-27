@@ -25,7 +25,7 @@ export async function registerUser(formData: FormData) {
             password: parsed.data.password,
             options: {
                 data: { full_name: parsed.data.fullName },
-                emailRedirectTo: appUrl.replace(/\\/+$/, '') + '/auth/callback'
+                emailRedirectTo: appUrl + '/auth/callback'
             }
         });
         if (error) {
