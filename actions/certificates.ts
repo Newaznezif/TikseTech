@@ -26,6 +26,29 @@ export async function saveCertificateTemplateAction(formData: FormData) {
     const accentColor = String(formData.get('accentColor') || '#c49a45');
     const showOnHomepage = formData.get('showOnHomepage') === 'on';
 
+    const { data: existingTemplate, error: existingError } = await admin.from('certificate_templates')
+        .select('signature_image_path, stamp_image_path').eq('program_id', programId).maybeSingle();
+    if (existingError) throw new Error('Existing certificate assets could not be loaded.');
+
+    const uploadCertificateAsset = async (field: string, kind: 'signature' | 'stamp', previousPath: string | null) => {
+        const file = formData.get(field);
+        if (!(file instanceof File) || file.size === 0) return previousPath;
+        const allowed = ['image/png', 'image/jpeg', 'image/webp'];
+        if (!allowed.includes(file.type) || file.size > 2 * 1024 * 1024) {
+            throw new Error('Signature and stamp files must be PNG, JPEG, or WebP images under 2 MB.');
+        }
+        const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+        const path = programId + '/' + kind + '-' + Date.now() + '.' + extension;
+        const { error } = await admin.storage.from('certificate-assets').upload(path, file, {
+            contentType: file.type, upsert: false, cacheControl: '3600'
+        });
+        if (error) throw new Error('Certificate ' + kind + ' upload failed: ' + error.message);
+        return path;
+    };
+
+    const signatureImagePath = await uploadCertificateAsset('signatureImage', 'signature', existingTemplate?.signature_image_path || null);
+    const stampImagePath = await uploadCertificateAsset('stampImage', 'stamp', existingTemplate?.stamp_image_path || null);
+
     if (!programId || !signerName || !signatureText) throw new Error('Select a course and provide the authorized signatory and signature.');
     if (!/^#[0-9a-fA-F]{6}$/.test(primaryColor) || !/^#[0-9a-fA-F]{6}$/.test(accentColor)) {
         throw new Error('Certificate colors must be valid six-digit hex colors.');
@@ -40,6 +63,8 @@ export async function saveCertificateTemplateAction(formData: FormData) {
         signer_name: signerName,
         signer_title: signerTitle,
         signature_text: signatureText,
+        signature_image_path: signatureImagePath,
+        stamp_image_path: stampImagePath,
         primary_color: primaryColor,
         accent_color: accentColor,
         show_on_homepage: showOnHomepage,
