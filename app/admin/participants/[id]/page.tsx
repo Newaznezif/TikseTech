@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { saveParticipantAdminAction } from "@/actions/participants";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser, hasRequiredRole } from "@/lib/session";
 import { getSupabaseAdminClient } from "@/lib/supabase";
@@ -16,7 +17,8 @@ function Status({ value }: { value: string }) {
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${style}`}>{value.replaceAll("_", " ")}</span>;
 }
 
-export default async function ParticipantRecordPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ParticipantRecordPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams?: Promise<{ updated?: string }> }) {
+  const query = searchParams ? await searchParams : {};
   const session = await getSessionUser();
   if (!session) redirect("/login");
   if (!hasRequiredRole(session, ["ADMIN", "SUPER_ADMIN"])) redirect("/dashboard");
@@ -25,7 +27,7 @@ export default async function ParticipantRecordPage({ params }: { params: Promis
   if (!admin) throw new Error("Supabase server credentials are not configured.");
 
   const [profileResult, applicationsResult, enrollmentsResult, submissionsResult, certificatesResult, completionsResult] = await Promise.all([
-    admin.from("profiles").select("id, full_name, email, country, timezone, short_bio, education, experience, github, linkedin, portfolio, website, created_at").eq("id", id).eq("role", "PARTICIPANT").maybeSingle(),
+    admin.from("profiles").select("id, full_name, email, country, timezone, short_bio, education, experience, skills, participant_number, account_status, github, linkedin, portfolio, website, created_at").eq("id", id).eq("role", "PARTICIPANT").maybeSingle(),
     admin.from("applications").select("id, program_id, status, submitted_at, motivation").eq("applicant_id", id).order("submitted_at", { ascending: false }),
     admin.from("enrollments").select("id, program_id, status, joined_at, completed_at").eq("participant_id", id).order("joined_at", { ascending: false }),
     admin.from("assignment_submissions").select("id, challenge_id, program_id, status, score, max_score, feedback, submitted_at, original_file_name").eq("applicant_id", id).order("submitted_at", { ascending: false }),
@@ -62,6 +64,7 @@ export default async function ParticipantRecordPage({ params }: { params: Promis
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Participant record</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">{person.full_name}</h1>
             <p className="mt-1 text-slate-600">{person.email}</p>
+            <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-blue-700">ID: {person.participant_number || "Not assigned"} · Account: {person.account_status || "ACTIVE"}</p>
             <p className="mt-2 text-sm text-slate-500">{person.country || "Country not provided"} · Joined {formatDate(person.created_at)}</p>
           </div>
           <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -78,6 +81,46 @@ export default async function ParticipantRecordPage({ params }: { params: Promis
         </div>
       </section>
 
+      {query.updated === "1" ? <p role="status" className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Participant account and ID updated.</p> : null}
+      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-5">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">Account administration</p>
+          <h2 className="mt-1 text-xl font-black text-slate-950">Manage participant profile and ID</h2>
+          <p className="mt-1 text-sm text-slate-500">Update the participant record, official participant number, skills, and account access status.</p>
+        </div>
+        <form action={saveParticipantAdminAction} className="grid gap-4 sm:grid-cols-2">
+          <input type="hidden" name="participantId" value={person.id}/>
+          <label className="text-sm font-semibold text-slate-700">Full name<input name="fullName" defaultValue={person.full_name} required minLength={2} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 font-normal"/></label>
+          <label className="text-sm font-semibold text-slate-700">Official participant ID<input name="participantNumber" defaultValue={person.participant_number || ""} required pattern="TT-P-[A-Za-z0-9-]{4,32}" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 font-mono font-normal"/></label>
+          <label className="text-sm font-semibold text-slate-700">Country<input name="country" defaultValue={person.country || ""} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 font-normal"/></label>
+          <label className="text-sm font-semibold text-slate-700">Timezone<input name="timezone" defaultValue={person.timezone || ""} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 font-normal"/></label>
+          <label className="text-sm font-semibold text-slate-700">Education level
+            <select name="education" defaultValue={person.education || ""} className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 font-normal">
+              <option value="">Not provided</option>
+              {["High School","TVET / Technical Certificate","Certificate","Diploma","Bachelor’s Degree","Master’s Degree","Doctorate (PhD)","Other / Self-taught"].map(v=><option key={v} value={v}>{v}</option>)}
+            </select>
+          </label>
+          <label className="text-sm font-semibold text-slate-700">Years of experience
+            <select name="experience" defaultValue={person.experience || ""} className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 font-normal">
+              <option value="">Not provided</option>
+              {["No formal experience yet","Less than 1 year","1–2 years","3–5 years","6–10 years","More than 10 years"].map(v=><option key={v} value={v}>{v}</option>)}
+            </select>
+          </label>
+          <label className="text-sm font-semibold text-slate-700">Account access
+            <select name="accountStatus" defaultValue={person.account_status || "ACTIVE"} className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 font-normal">
+              <option value="ACTIVE">Active — can sign in</option>
+              <option value="SUSPENDED">Suspended — sign-in blocked</option>
+            </select>
+          </label>
+          <fieldset className="sm:col-span-2">
+            <legend className="mb-2 text-sm font-semibold text-slate-700">Skills</legend>
+            <div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3">
+              {["Programming","Web Development","Mobile Development","Cybersecurity","Networking","Artificial Intelligence","Data Analysis","Cloud Computing","DevOps","UI/UX Design","Graphic Design","Project Management","Research","Communication","Digital Marketing"].map(skill=><label key={skill} className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="skills" value={skill} defaultChecked={Array.isArray(person.skills) && person.skills.includes(skill)} className="h-4 w-4"/> {skill}</label>)}
+            </div>
+          </fieldset>
+          <div className="sm:col-span-2"><button className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700">Save participant changes</button></div>
+        </form>
+      </section>
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-slate-200 bg-white p-6">
           <h2 className="text-lg font-bold text-slate-950">Applications</h2>
