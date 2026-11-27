@@ -830,56 +830,37 @@ export async function createCertificateForProgram(programId: string, participant
 export async function verifyCertificateByCode(code: string) {
     return withSupabaseFallback('verifyCertificateByCode', async () => {
         const admin = getSupabaseAdminClient();
-        if (!admin) {
-            throw new Error('Supabase admin client is unavailable.');
-        }
-
+        if (!admin) throw new Error('Supabase admin client is unavailable.');
         const { data, error } = await admin.rpc('get_public_certificate_by_code', { _verification_code: code.trim() });
-        if (error) {
-            throw error;
-        }
-
+        if (error) throw error;
         const row = Array.isArray(data) ? data[0] : null;
-        if (!row) {
-            const { data: revokedData, error: revokedError } = await admin.from('certificates').select('*').eq('verification_code', code.trim()).maybeSingle();
-            if (revokedError) {
-                throw revokedError;
-            }
-
-            if (revokedData) {
-                return { found: true, certificate: mapDbCertificate(revokedData), revoked: revokedData.status === 'REVOKED' };
-            }
-
-            return { found: false, certificate: null };
-        }
-
-        return {
-            found: true, certificate: mapDbCertificate({
-                id: row.id,
-                certificate_number: row.certificate_number,
-                verification_code: row.verification_code,
-                participant_id: row.participant_id,
-                program_id: row.program_id,
-                certificate_title: row.certificate_title,
-                issued_at: row.issue_date,
-                completed_at: row.completion_date,
-                status: 'ACTIVE',
-                pdf_path: '',
-                verification_url: '',
-                created_at: row.issue_date,
-                updated_at: row.issue_date
-            }), revoked: false
+        if (row) return {
+            found: true,
+            certificate: mapDbCertificate({ id: '', certificate_number: row.certificate_number, verification_code: row.verification_code,
+                certificate_title: row.certificate_title, issued_at: row.issue_date, completed_at: row.completion_date,
+                status: 'ACTIVE', created_at: row.issue_date, updated_at: row.issue_date }),
+            revoked: false, participantName: row.participant_name, programTitle: row.program_title, programCategory: row.program_category
         };
+        const { data: revokedData, error: revokedError } = await admin.from('certificates').select('*')
+            .eq('verification_code', code.trim()).maybeSingle();
+        if (revokedError) throw revokedError;
+        if (!revokedData) return { found: false, certificate: null, revoked: false };
+        const [profileResult, programResult] = await Promise.all([
+            admin.from('profiles').select('full_name').eq('id', revokedData.participant_id).maybeSingle(),
+            admin.from('programs').select('title,category').eq('id', revokedData.program_id).maybeSingle()
+        ]);
+        return { found: true, certificate: mapDbCertificate(revokedData), revoked: revokedData.status === 'REVOKED',
+            participantName: profileResult.data?.full_name || 'Participant', programTitle: programResult.data?.title || 'Program',
+            programCategory: programResult.data?.category || 'Technology' };
     }, async () => {
         const data = await readStore();
         const certificate = data.certificates.find((item) => item.verificationCode === code.trim());
-        if (!certificate) return { found: false, certificate: null };
-
-        if (certificate.status === 'REVOKED') {
-            return { found: true, certificate, revoked: true };
-        }
-
-        return { found: true, certificate, revoked: false };
+        if (!certificate) return { found: false, certificate: null, revoked: false };
+        const participant = data.profiles.find((item) => item.id === certificate.participantId);
+        const program = data.programs.find((item) => item.id === certificate.programId);
+        return { found: true, certificate, revoked: certificate.status === 'REVOKED',
+            participantName: participant?.fullName || 'Participant', programTitle: program?.title || 'Program',
+            programCategory: program?.category || 'Technology' };
     });
 }
 
