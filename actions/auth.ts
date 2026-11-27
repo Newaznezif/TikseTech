@@ -57,7 +57,9 @@ export async function registerUser(formData: FormData) {
 export async function loginUser(formData: FormData) {
     const email = String(formData.get('email') || '').trim().toLowerCase();
     const password = String(formData.get('password') || '');
-    if (!email || !password) redirect('/login?error=invalid-credentials');
+    const adminPortal = String(formData.get('portal') || '') === 'admin';
+    const loginPath = adminPortal ? '/admin/login' : '/login';
+    if (!email || !password) redirect(loginPath + '?error=invalid-credentials');
 
     if (isSupabaseConfigured() && !shouldUseLocalStore()) {
         const supabase = await createSupabaseServerClient();
@@ -65,24 +67,31 @@ export async function loginUser(formData: FormData) {
         if (error || !data.user) {
             const message = (error?.message || '').toLowerCase();
             if (error?.code === 'email_not_confirmed' || message.includes('email not confirmed')) {
-                redirect('/login?error=verify-email');
+                redirect(loginPath + '?error=verify-email');
             }
-            redirect('/login?error=invalid-credentials');
+            redirect(loginPath + '?error=invalid-credentials');
         }
         const { data: profile, error: profileError } = await supabase.from('profiles')
             .select('id, email, full_name, role').eq('auth_user_id', data.user.id).maybeSingle();
         if (profileError || !profile) {
             await supabase.auth.signOut();
-            redirect('/login?error=profile-not-ready');
+            redirect(loginPath + '?error=profile-not-ready');
         }
-        if (['ADMIN', 'SUPER_ADMIN'].includes(String(profile.role || '').toUpperCase())) redirect('/admin');
+        const isAdministrator = ['ADMIN', 'SUPER_ADMIN'].includes(String(profile.role || '').toUpperCase());
+        if (adminPortal && !isAdministrator) {
+            await supabase.auth.signOut();
+            redirect('/admin/login?error=not-admin');
+        }
+        if (isAdministrator) redirect('/admin');
         redirect('/dashboard');
     }
-    if (process.env.NODE_ENV === 'production') redirect('/login?error=server-configuration');
+    if (process.env.NODE_ENV === 'production') redirect(loginPath + '?error=server-configuration');
     const profile = await getProfileByEmail(email);
-    if (!profile) redirect('/login?error=invalid-credentials');
+    if (!profile) redirect(loginPath + '?error=invalid-credentials');
+    const isAdministrator = ['ADMIN', 'SUPER_ADMIN'].includes(String(profile.role || '').toUpperCase());
+    if (adminPortal && !isAdministrator) redirect('/admin/login?error=not-admin');
     await setSessionUser({ email: profile.email, role: profile.role, profileId: profile.id, name: profile.fullName });
-    if (['ADMIN', 'SUPER_ADMIN'].includes(String(profile.role || '').toUpperCase())) redirect('/admin');
+    if (isAdministrator) redirect('/admin');
     redirect('/dashboard');
 }
 
