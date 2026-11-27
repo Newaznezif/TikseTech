@@ -119,6 +119,7 @@ export async function reviewAssignment(formData: FormData) {
     if (!id || !allowed.includes(status)) throw new Error('Invalid review request.');
     const score = scoreText === '' ? null : Number(scoreText);
     if (score !== null && (!Number.isFinite(score) || score < 0 || score > 100)) throw new Error('Score must be between 0 and 100.');
+    if (status === 'ACCEPTED' && (score === null || score < 70)) throw new Error('An assignment can only be accepted with a score of at least 70/100.');
     if (feedback.length > 5000) throw new Error('Feedback must be 5,000 characters or fewer.');
 
     const admin = getSupabaseAdminClient();
@@ -132,6 +133,15 @@ export async function reviewAssignment(formData: FormData) {
         actor: session!.profileId, action: 'ASSIGNMENT_REVIEWED', entity: 'assignment_submissions',
         entity_id: id, metadata: { status, score }
     });
+    const [participantResult, programResult] = await Promise.all([
+        admin.from('profiles').select('full_name,email').eq('id', data.applicant_id).maybeSingle(),
+        admin.from('programs').select('title').eq('id', data.program_id).maybeSingle()
+    ]);
+    if (participantResult.data?.email && programResult.data?.title) {
+        const { sendStatusEmail } = await import('@/lib/email');
+        await sendStatusEmail({ to: participantResult.data.email, name: participantResult.data.full_name,
+            subject: 'TIKSE TECH assignment review update', programTitle: programResult.data.title, status, feedback });
+    }
     revalidatePath('/admin/reviews');
     revalidatePath('/dashboard/assignments');
     redirect('/admin/reviews?saved=1');
