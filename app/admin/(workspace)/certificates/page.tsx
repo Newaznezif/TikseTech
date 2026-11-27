@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Image from 'next/image';
 import { markCompletedAction, saveCertificateTemplateAction } from '@/actions/certificates';
 import { getSessionUser, hasRequiredRole } from '@/lib/session';
 import { getSupabaseAdminClient } from '@/lib/supabase';
@@ -9,6 +10,7 @@ type Template = {
   id: string; program_id: string; template_name: string; certificate_title: string; subtitle: string;
   issuer_name: string; signer_name: string; signer_title: string; signature_text: string;
   primary_color: string; accent_color: string; show_on_homepage: boolean;
+  signature_image_path: string | null; stamp_image_path: string | null;
 };
 
 export default async function AdminCertificatesPage({ searchParams }: { searchParams?: Promise<{ template?: string }> }) {
@@ -34,6 +36,17 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
 
   const programs = programsResult.data || [];
   const templates = new Map(((templatesResult.data || []) as Template[]).map(t => [t.program_id, t]));
+  const assetPreviews = new Map<string, { signatureUrl: string | null; stampUrl: string | null }>();
+  await Promise.all([...templates.values()].map(async template => {
+    const [signature, stamp] = await Promise.all([
+      template.signature_image_path ? admin.storage.from('certificate-assets').createSignedUrl(template.signature_image_path, 3600) : Promise.resolve({ data: null, error: null }),
+      template.stamp_image_path ? admin.storage.from('certificate-assets').createSignedUrl(template.stamp_image_path, 3600) : Promise.resolve({ data: null, error: null })
+    ]);
+    assetPreviews.set(template.program_id, {
+      signatureUrl: signature.data?.signedUrl || null,
+      stampUrl: stamp.data?.signedUrl || null
+    });
+  }));
   const enrollments = enrollmentsResult.data || [];
   const participantIds = [...new Set(enrollments.map(e => e.participant_id))];
   const programIds = [...new Set(enrollments.map(e => e.program_id))];
@@ -70,6 +83,7 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
             const t = templates.get(program.id);
             const primary = t?.primary_color || '#123b68';
             const accent = t?.accent_color || '#c49a45';
+            const assets = assetPreviews.get(program.id);
             return (
               <article key={program.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="border-b border-slate-100 p-5"><p className="text-xs font-bold uppercase tracking-wider text-blue-700">{program.category}</p><h3 className="mt-1 text-lg font-bold text-slate-950">{program.title}</h3></div>
@@ -78,7 +92,7 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
                     <div className="flex h-full flex-col items-center justify-between border p-3 text-center sm:p-5" style={{ borderColor: accent }}>
                       <div><p className="text-[8px] font-black uppercase tracking-[0.25em] sm:text-[10px]" style={{ color: primary }}>{t?.issuer_name || 'TIKSE TECH'}</p><div className="mx-auto my-2 h-[2px] w-16" style={{ backgroundColor: accent }}/><p className="text-[11px] font-black uppercase tracking-widest sm:text-base" style={{ color: primary }}>{t?.certificate_title || 'Certificate of Completion'}</p></div>
                       <div><p className="text-[7px] text-slate-500 sm:text-[10px]">{t?.subtitle || 'This certificate is proudly presented to'}</p><p className="mt-1 text-sm font-serif italic text-slate-800 sm:text-xl">Participant Name</p><div className="mx-auto my-2 h-px w-2/3" style={{ backgroundColor: accent }}/><p className="text-[7px] text-slate-500 sm:text-[10px]">For successfully completing</p><p className="mt-1 max-w-xs text-[9px] font-bold sm:text-sm" style={{ color: primary }}>{program.title}</p></div>
-                      <div className="flex w-full items-end justify-between gap-2"><div className="text-left"><p className="font-serif text-[10px] italic sm:text-base" style={{ color: primary }}>{t?.signature_text || 'Authorized Signature'}</p><div className="my-1 w-20 border-t border-slate-400 sm:w-28"/><p className="text-[6px] font-bold sm:text-[9px]">{t?.signer_name || 'Signatory name'}</p><p className="text-[6px] text-slate-500 sm:text-[8px]">{t?.signer_title || 'Authorized Signatory'}</p></div><div className="text-right text-[6px] text-slate-500 sm:text-[8px]">CERTIFICATE ID<br/>TT-XXXX-XXXX<br/>QR VERIFICATION</div></div>
+                      <div className="flex w-full items-end justify-between gap-2"><div className="text-left">{assets?.signatureUrl ? <Image src={assets.signatureUrl} alt="Uploaded authorized signature" width={140} height={38} unoptimized className="h-8 w-28 object-contain object-left"/> : <p className="font-serif text-[10px] italic sm:text-base" style={{ color: primary }}>{t?.signature_text || 'Authorized Signature'}</p>}<div className="my-1 w-20 border-t border-slate-400 sm:w-28"/><p className="text-[6px] font-bold sm:text-[9px]">{t?.signer_name || 'Signatory name'}</p><p className="text-[6px] text-slate-500 sm:text-[8px]">{t?.signer_title || 'Authorized Signatory'}</p></div><div className="flex flex-col items-end text-right text-[6px] text-slate-500 sm:text-[8px]">{assets?.stampUrl ? <Image src={assets.stampUrl} alt="Uploaded official stamp" width={64} height={64} unoptimized className="mb-1 h-10 w-10 object-contain"/> : null}CERTIFICATE ID<br/>TT-XXXX-XXXX<br/>QR VERIFICATION</div></div>
                     </div>
                   </div>
                 </div>
@@ -90,7 +104,9 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
                   <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Presentation line<input name="subtitle" defaultValue={t?.subtitle || 'This certificate is proudly presented to'} required className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900"/></label>
                   <label className="text-xs font-semibold text-slate-600">Authorized signatory<input name="signerName" defaultValue={t?.signer_name || ''} required placeholder="Full legal name" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900"/></label>
                   <label className="text-xs font-semibold text-slate-600">Signatory title<input name="signerTitle" defaultValue={t?.signer_title || 'Authorized Signatory'} required className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900"/></label>
-                  <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Signature text<input name="signatureText" defaultValue={t?.signature_text || ''} required placeholder="Type the authorized signatory's signature name" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900"/></label>
+                  <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Signature text fallback<input name="signatureText" defaultValue={t?.signature_text || t?.signer_name || ''} required placeholder="Authorized signatory name" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900"/></label>
+                  <label className="text-xs font-semibold text-slate-600">Import signature image<input name="signatureImage" type="file" accept="image/png,image/jpeg,image/webp" className="mt-2 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:font-semibold file:text-blue-700"/><span className="mt-1 block text-[11px] font-normal text-slate-500">Transparent PNG recommended · max 2 MB</span></label>
+                  <label className="text-xs font-semibold text-slate-600">Import official stamp / seal<input name="stampImage" type="file" accept="image/png,image/jpeg,image/webp" className="mt-2 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:font-semibold file:text-blue-700"/><span className="mt-1 block text-[11px] font-normal text-slate-500">PNG, JPEG or WebP · max 2 MB</span></label>
                   <label className="flex items-center gap-3 text-xs font-semibold text-slate-600">Primary color<input type="color" name="primaryColor" defaultValue={primary} className="h-10 w-14 cursor-pointer rounded border border-slate-300"/></label>
                   <label className="flex items-center gap-3 text-xs font-semibold text-slate-600">Accent color<input type="color" name="accentColor" defaultValue={accent} className="h-10 w-14 cursor-pointer rounded border border-slate-300"/></label>
                   <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2"><input type="checkbox" name="showOnHomepage" defaultChecked={t?.show_on_homepage ?? true} className="h-4 w-4"/> Show this course certificate design on the public homepage</label>
