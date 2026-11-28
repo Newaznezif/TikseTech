@@ -13,7 +13,7 @@ const loginMessages: Record<string, string> = {
     'account-suspended': 'This participant account is currently suspended. Contact TIKSE TECH support if you believe this is an error.',
 };
 
-export default async function LoginPage({ searchParams }: { searchParams?: Promise<{ registered?: string; error?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams?: Promise<{ registered?: string; error?: string; "password-updated"?: string }> }) {
     const params = searchParams ? await searchParams : {};
     const message = params.error ? loginMessages[params.error] : undefined;
     return (
@@ -36,6 +36,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Welcome back</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">Sign in to your account</h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">Continue your learning and track your opportunities.</p>
+              {params["password-updated"] === '1' ? <p role="status" className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">Your password has been updated. Sign in with your new password.</p> : null}
               {params.registered === '1' ? <p role="status" className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">Your account has been created. Check your email for the verification link, then sign in.</p> : null}
               {message ? <p role="alert" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">{message}</p> : null}
               <form action={loginUser} className="mt-8 space-y-5">
