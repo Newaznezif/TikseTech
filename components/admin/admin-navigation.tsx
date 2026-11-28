@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-    Activity, Award, BookOpenCheck, ClipboardList, FileCheck2,
+    Award, BookOpenCheck, ClipboardList, FileCheck2,
     LayoutDashboard, Users
 } from "lucide-react";
 
