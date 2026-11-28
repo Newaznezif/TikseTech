@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-    Award, BookOpenCheck, ClipboardList, FileCheck2,
+    Activity, Award, BookOpenCheck, ClipboardList, FileCheck2,
     LayoutDashboard, Users
 } from "lucide-react";
 
@@ -13,7 +13,8 @@ const items = [
     { href: "/admin/applications", label: "Applications", icon: ClipboardList },
     { href: "/admin/reviews", label: "Assignment reviews", icon: BookOpenCheck },
     { href: "/admin/challenges", label: "Challenges", icon: FileCheck2 },
-    { href: "/admin/certificates", label: "Certificates", icon: Award },\n    { href: "/admin/activity", label: "Activity & notices", icon: Activity }
+    { href: "/admin/certificates", label: "Certificates", icon: Award },
+    { href: "/admin/activity", label: "Activity & notices", icon: Activity }
 ];
 
 export function AdminNavigation() {
