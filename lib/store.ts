@@ -3,6 +3,7 @@ import path from 'node:path';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getSupabaseAdminClient, isSupabaseConfigured, shouldUseLocalStore } from '@/lib/supabase';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { appUrl } from '@/lib/env';
 import { generateCertificateNumber, generateVerificationCode } from '@/lib/utils';
 import type { AppData, Application, Certificate, Enrollment, Program, ProgramStatus, UserProfile } from '@/lib/types';
@@ -243,15 +244,22 @@ function shouldUseSupabaseStore() {
 }
 
 async function withSupabaseFallback<T>(context: string, operation: () => Promise<T>, fallback: () => Promise<T>): Promise<T> {
-    if (!isSupabaseConfigured()) {
+    // Local JSON storage is permitted only in explicit local/test mode.
+    // Production must never turn a Supabase outage or configuration error
+    // into apparently real records from the demo store.
+    if (shouldUseLocalStore()) {
         return fallback();
+    }
+
+    if (!isSupabaseConfigured()) {
+        throw new Error(`[store:${context}] Supabase is not configured; local fallback is disabled outside local/test mode.`);
     }
 
     try {
         return await operation();
     } catch (error) {
-        console.warn(`[store:${context}] Supabase operation failed; falling back to local store:`, error);
-        return fallback();
+        console.error(`[store:${context}] Supabase operation failed; refusing local fallback:`, error);
+        throw error;
     }
 }
 
@@ -287,12 +295,11 @@ export async function saveStore(data: AppData) {
 
 export async function listPrograms() {
     return withSupabaseFallback('listPrograms', async () => {
-        const admin = getSupabaseAdminClient();
-        if (!admin) {
-            throw new Error('Supabase admin client is unavailable.');
-        }
-
-        const { data, error } = await admin.from('programs').select('*').order('created_at', { ascending: false });
+        // Public program discovery uses the authenticated server client and
+        // the existing published-program RLS policy; it does not need a
+        // service-role key.
+        const supabase = await createSupabaseServerClient();
+        const { data, error } = await supabase.from('programs').select('*').order('created_at', { ascending: false });
         if (error) {
             throw error;
         }
@@ -306,12 +313,8 @@ export async function listPrograms() {
 
 export async function getProgramBySlug(slug: string) {
     return withSupabaseFallback('getProgramBySlug', async () => {
-        const admin = getSupabaseAdminClient();
-        if (!admin) {
-            throw new Error('Supabase admin client is unavailable.');
-        }
-
-        const { data, error } = await admin.from('programs').select('*').eq('slug', slug).maybeSingle();
+        const supabase = await createSupabaseServerClient();
+        const { data, error } = await supabase.from('programs').select('*').eq('slug', slug).maybeSingle();
         if (error) {
             throw error;
         }
