@@ -53,7 +53,6 @@ export default async function AdminWorkspaceLayout({ children }: { children: Rea
                         <div><p className="text-xs font-bold">{session.name || "Administrator"}</p><p className="text-[10px] text-slate-400">{session.role} · Authorized workspace</p></div>
                         <Link href="/" className="text-xs font-semibold text-cyan-200">Public site ↗</Link>
                     </div>
-                    <AdminNavigation />
                 </div>
                 {children}
             </div>
