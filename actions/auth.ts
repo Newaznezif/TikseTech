@@ -181,3 +181,35 @@ export async function logoutUser() {
     await clearSessionUser();
     redirect('/login');
 }
+
+
+/** Send a single-use recovery link without revealing whether an account exists. */
+export async function requestPasswordReset(formData: FormData) {
+    const email = String(formData.get('email') || '').trim().toLowerCase();
+    if (!email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) redirect('/forgot-password?error=invalid-email');
+    if (!isSupabaseConfigured() || shouldUseLocalStore()) redirect('/forgot-password?error=unavailable');
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${appUrl}/auth/callback?next=/update-password` });
+    if (error) {
+        const message = error.message.toLowerCase();
+        if (message.includes('rate limit') || error.code === 'over_email_send_rate_limit') redirect('/forgot-password?error=rate-limit');
+        redirect('/forgot-password?error=send-failed');
+    }
+    redirect('/forgot-password?sent=1');
+}
+
+/** Change password only after the recovery callback has established a valid session. */
+export async function updateRecoveredPassword(formData: FormData) {
+    const password = String(formData.get('password') || '');
+    const confirmPassword = String(formData.get('confirmPassword') || '');
+    if (password.length < 8) redirect('/update-password?error=weak-password');
+    if (password !== confirmPassword) redirect('/update-password?error=password-mismatch');
+    if (!isSupabaseConfigured() || shouldUseLocalStore()) redirect('/update-password?error=unavailable');
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) redirect('/forgot-password?error=session-expired');
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) redirect('/update-password?error=update-failed');
+    await supabase.auth.signOut();
+    redirect('/login?password-updated=1');
+}
