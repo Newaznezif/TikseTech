@@ -1,55 +1,28 @@
-import Link from 'next/link';
-import { ArrowRight, CalendarRange, Globe2, Users } from 'lucide-react';
-
-import { listPrograms } from '@/lib/store';
+import { Globe2 } from "lucide-react";
+import { listPrograms } from "@/lib/store";
+import { ProgramBrowser } from "@/components/programs/program-browser";
 
 export const metadata = {
-    title: 'Programs | TIKSE TECH',
-    description: 'Browse open remote technology programs and learning opportunities.'
+    title: "Programs | TIKSE TECH",
+    description: "Browse remote technology programs and practical learning opportunities open to global participants."
 };
 
 export default async function ProgramsPage() {
-    const programs = await listPrograms();
+    const allPrograms = await listPrograms();
+    const programs = allPrograms.filter(program => !["DRAFT", "ARCHIVED"].includes(program.status));
 
     return (
-        <div className="container-shell py-20">
-            <div className="flex items-end justify-between gap-4">
-                <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Open programs</p>
-                    <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-900">Explore remote learning opportunities</h1>
+        <main className="container-shell py-10 sm:py-14">
+            <section className="relative overflow-hidden rounded-[1.75rem] bg-[#0a1628] px-6 py-10 text-white sm:px-10 sm:py-14">
+                <div className="absolute -right-16 -top-24 h-72 w-72 rounded-full bg-cyan-400/15 blur-3xl" />
+                <div className="relative max-w-3xl">
+                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">Learning pathways</p>
+                    <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">Find the program that moves you forward.</h1>
+                    <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">Explore practical technology programs, build skills through guided work, and connect with a global learning community.</p>
+                    <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200"><Globe2 className="h-4 w-4 text-cyan-300" aria-hidden="true" /> Remote · Worldwide</div>
                 </div>
-                <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 sm:flex">
-                    <Globe2 className="h-4 w-4 text-blue-600" />
-                    Remote — Worldwide
-                </div>
-            </div>
-
-            <div className="mt-12 grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-                {programs.map((program) => (
-                    <article key={program.id} className="card-surface overflow-hidden p-6">
-                        <div className="flex items-center justify-between gap-2">
-                            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">{program.category}</span>
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{program.status}</span>
-                        </div>
-                        <h2 className="mt-4 text-2xl font-bold text-slate-900">{program.title}</h2>
-                        <p className="mt-3 text-slate-600">{program.shortDescription}</p>
-
-                        <div className="mt-5 space-y-2 text-sm text-slate-600">
-                            <div className="flex items-center gap-2"><CalendarRange className="h-4 w-4 text-blue-600" /> {program.duration}</div>
-                            <div className="flex items-center gap-2"><Users className="h-4 w-4 text-blue-600" /> {program.availableSeats} seats available</div>
-                        </div>
-
-                        <div className="mt-6 flex items-center justify-between text-sm text-slate-500">
-                            <span>{program.difficulty}</span>
-                            <span>{program.applicationDeadline}</span>
-                        </div>
-
-                        <Link href={`/programs/${program.slug}`} className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800">
-                            View program <ArrowRight className="h-4 w-4" />
-                        </Link>
-                    </article>
-                ))}
-            </div>
-        </div>
+            </section>
+            <ProgramBrowser programs={programs} />
+        </main>
     );
 }
