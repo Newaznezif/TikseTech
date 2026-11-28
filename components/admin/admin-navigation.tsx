@@ -13,7 +13,7 @@ const items = [
     { href: "/admin/applications", label: "Applications", icon: ClipboardList },
     { href: "/admin/reviews", label: "Assignment reviews", icon: BookOpenCheck },
     { href: "/admin/challenges", label: "Challenges", icon: FileCheck2 },
-    { href: "/admin/certificates", label: "Certificates", icon: Award }
+    { href: "/admin/certificates", label: "Certificates", icon: Award },\n    { href: "/admin/activity", label: "Activity & notices", icon: Activity }
 ];
 
 export function AdminNavigation() {
