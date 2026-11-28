@@ -11,6 +11,7 @@ export const metadata = {
 
 const errors: Record<string, string> = {
   "invalid-credentials": "The email address or password is incorrect.",
+  "rate-limit": "Too many authentication requests. Wait before trying again; repeated attempts can extend the temporary limit.",
   "verify-email": "Verify your email address before signing in.",
   "profile-not-ready": "Your account profile could not be loaded. Contact the platform owner.",
   "server-configuration": "Administrator sign-in is temporarily unavailable. Contact technical support.",
@@ -67,7 +68,7 @@ export default async function AdminLoginPage({ searchParams }: { searchParams?: 
             ) : (
               <form action={loginUser} className="space-y-5">
                 <input type="hidden" name="portal" value="admin"/>
-                <div><label htmlFor="admin-email" className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-300">Administrator email</label><input id="admin-email" name="email" type="email" autoComplete="username" required placeholder="admin@tiksetech.com" className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/10"/></div>
+                <div><label htmlFor="admin-email" className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-300">Administrator email</label><input id="admin-email" name="email" type="email" autoComplete="username" required placeholder="Enter your approved administrator email" className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/10"/></div>
                 <div><label htmlFor="admin-password" className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-300">Password</label><input id="admin-password" name="password" type="password" autoComplete="current-password" required placeholder="Enter your password" className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/10"/></div>
                 <div className="-mt-2 text-right"><Link href="/forgot-password" className="text-sm font-semibold text-cyan-200 hover:text-white">Forgot password?</Link></div>
                 <button type="submit" className="w-full rounded-xl bg-cyan-300 px-4 py-3.5 text-sm font-black text-slate-950 transition hover:bg-cyan-200">Access manager workspace <span aria-hidden="true">→</span></button>
