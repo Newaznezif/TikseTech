@@ -3,44 +3,56 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getSessionUser, hasRequiredRole } from '@/lib/session';
-import { getSupabaseAdminClient } from '@/lib/supabase';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { sendStatusEmail } from '@/lib/email';
 
 export async function reviewApplication(formData: FormData) {
     const session = await getSessionUser();
-    if (!hasRequiredRole(session, ['ADMIN', 'SUPER_ADMIN'])) throw new Error('Administrator access is required.');
-    const id = String(formData.get('applicationId') || '');
+    if (!hasRequiredRole(session, ['ADMIN', 'SUPER_ADMIN'])) {
+        throw new Error('Administrator access is required.');
+    }
+
+    const id = String(formData.get('applicationId') || '').trim();
     const status = String(formData.get('status') || 'UNDER_REVIEW');
     const feedback = String(formData.get('feedback') || '').trim();
     const allowed = ['UNDER_REVIEW', 'SHORTLISTED', 'ACCEPTED', 'WAITLISTED', 'REJECTED'];
+
     if (!id || !allowed.includes(status)) throw new Error('Invalid application review.');
     if (feedback.length > 5000) throw new Error('Feedback must be 5,000 characters or fewer.');
 
-    const admin = getSupabaseAdminClient();
-    if (!admin) throw new Error('Supabase server credentials are not configured.');
-    const { data: application, error: readError } = await admin.from('applications')
-        .select('id, program_id, applicant_id, full_name, email').eq('id', id).maybeSingle();
-    if (readError || !application) throw new Error('Application not found.');
-    const { data: program, error: programError } = await admin.from('programs').select('title').eq('id', application.program_id).single();
-    if (programError) throw new Error('Program record could not be loaded.');
+    // The database function performs the status update, acceptance enrollment,
+    // and audit insert in one transaction under the caller's authenticated role.
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.rpc('review_application', {
+        p_application_id: id,
+        p_status: status,
+        p_feedback: feedback || null
+    });
 
-    const { error: updateError } = await admin.from('applications').update({
-        status, admin_feedback: feedback || null, reviewed_by: session!.profileId,
-        reviewed_at: new Date().toISOString()
-    }).eq('id', id);
-    if (updateError) throw new Error('Application review could not be saved: ' + updateError.message);
-
-    if (status === 'ACCEPTED') {
-        const { error: enrollmentError } = await admin.from('enrollments').upsert({
-            program_id: application.program_id, participant_id: application.applicant_id, status: 'ENROLLED'
-        }, { onConflict: 'program_id,participant_id', ignoreDuplicates: true });
-        if (enrollmentError) throw new Error('Application was accepted, but enrollment could not be created: ' + enrollmentError.message);
+    if (error) {
+        if (error.code === '42501') throw new Error('Administrator authorization could not be verified.');
+        if (error.code === 'P0002') throw new Error('Application not found.');
+        throw new Error('Application review could not be saved: ' + error.message);
     }
 
-    await admin.from('audit_logs').insert({ actor: session!.profileId, action: 'APPLICATION_REVIEWED',
-        entity: 'applications', entity_id: id, metadata: { status } });
-    await sendStatusEmail({ to: application.email, name: application.full_name, subject: 'TIKSE TECH application update',
-        programTitle: program.title, status, feedback });
+    const details = Array.isArray(data) ? data[0] : data;
+    if (!details) throw new Error('The application review completed without returning applicant details.');
+
+    // Email is intentionally sent after the database transaction commits.
+    // A mail-provider failure must not roll back a completed admission decision.
+    try {
+        await sendStatusEmail({
+            to: details.applicant_email,
+            name: details.applicant_name,
+            subject: 'TIKSE TECH application update',
+            programTitle: details.program_title,
+            status,
+            feedback
+        });
+    } catch (emailError) {
+        console.error('[application-review] Decision saved, but notification email failed:', emailError);
+    }
+
     revalidatePath('/admin/applications');
     revalidatePath('/dashboard');
     revalidatePath('/dashboard/assignments');
