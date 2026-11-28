@@ -76,6 +76,9 @@ export async function loginUser(formData: FormData) {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error || !data.user) {
             const message = (error?.message || '').toLowerCase();
+            if (error?.status === 429 || error?.code === 'over_request_rate_limit' || message.includes('rate limit')) {
+                redirect(loginPath + '?error=rate-limit');
+            }
             if (error?.code === 'email_not_confirmed' || message.includes('email not confirmed')) {
                 redirect(loginPath + '?error=verify-email');
             }
