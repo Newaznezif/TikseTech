@@ -183,6 +183,25 @@ export async function logoutUser() {
 }
 
 
+/** Change a password after re-authenticating the signed-in user. */
+export async function changePassword(formData: FormData) {
+    const currentPassword = String(formData.get('currentPassword') || '');
+    const password = String(formData.get('password') || '');
+    const confirmPassword = String(formData.get('confirmPassword') || '');
+    if (!currentPassword) redirect('/settings?error=current-password-required');
+    if (password.length < 8) redirect('/settings?error=weak-password');
+    if (password !== confirmPassword) redirect('/settings?error=password-mismatch');
+    if (password === currentPassword) redirect('/settings?error=password-unchanged');
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user?.email) redirect('/login');
+    const { error: reauthError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
+    if (reauthError) redirect('/settings?error=current-password');
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) redirect('/settings?error=update-failed');
+    redirect('/settings?password-updated=1');
+}
+
 /** Send a single-use recovery link without revealing whether an account exists. */
 export async function requestPasswordReset(formData: FormData) {
     const email = String(formData.get('email') || '').trim().toLowerCase();
