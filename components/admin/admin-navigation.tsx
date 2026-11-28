@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-    Activity, Award, BarChart3, BookOpenCheck, ClipboardList, FileCheck2,
+    Activity, Award, BarChart3, BookOpen, BookOpenCheck, ClipboardList, FileCheck2,
     LayoutDashboard, Users
 } from "lucide-react";
 
 const items = [
     { href: "/admin", label: "Overview", icon: LayoutDashboard },
     { href: "/admin/participants", label: "Participants", icon: Users },
+    { href: "/admin/programs", label: "Programs", icon: BookOpen },
     { href: "/admin/applications", label: "Applications", icon: ClipboardList },
     { href: "/admin/reviews", label: "Assignment reviews", icon: BookOpenCheck },
     { href: "/admin/challenges", label: "Challenges", icon: FileCheck2 },
