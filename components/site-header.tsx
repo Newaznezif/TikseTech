@@ -1,61 +1,23 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import { ArrowRight, Globe2, Menu } from 'lucide-react';
+import { SiteHeaderClient } from "@/components/site-header-client";
+import { getSessionUser, hasRequiredRole } from "@/lib/session";
 
-import { AccountMenu } from '@/components/account-menu';
-import { buttonVariants } from '@/components/ui/button';
-import { getSessionUser, hasRequiredRole } from '@/lib/session';
+const navItems = [
+    { href: "/about", label: "About" },
+    { href: "/programs", label: "Programs" },
+    { href: "/opportunities", label: "Opportunities" },
+    { href: "/community", label: "Community" },
+    { href: "/certificates/verify", label: "Verify certificate" }
+];
 
 export async function SiteHeader() {
     const session = await getSessionUser();
-    const dashboardHref = hasRequiredRole(session, ['ADMIN', 'SUPER_ADMIN']) ? '/admin' : '/dashboard';
-    const navItems = [
-        { href: '/about', label: 'About' },
-        { href: '/programs', label: 'Programs' },
-        { href: '/opportunities', label: 'Opportunities' },
-        { href: '/community', label: 'Community' },
-        { href: '/certificates/verify', label: 'Verify Certificate' }
-    ];
+    const dashboardHref = hasRequiredRole(session, ["ADMIN", "SUPER_ADMIN"]) ? "/admin" : "/dashboard";
 
     return (
-        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
-            <div className="container-shell flex items-center justify-between py-4">
-                <Link href="/" className="flex items-center gap-3">
-                    <Image src="/logo.png" alt="TIKSE TECH logo" width={44} height={44} priority className="h-11 w-11 rounded-xl object-contain" />
-                    <div>
-                        <p className="text-lg font-black tracking-tight text-slate-900">TIKSE TECH</p>
-                        <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Without borders</p>
-                    </div>
-                </Link>
-
-                <nav className="hidden items-center gap-6 lg:flex">
-                    {navItems.map((item) => (
-                        <Link key={item.href} href={item.href} className="link-underline text-sm font-medium">
-                            {item.label}
-                        </Link>
-                    ))}
-                </nav>
-
-                <div className="flex items-center gap-3">
-                    <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 sm:flex">
-                        <Globe2 className="h-4 w-4 text-blue-600" />
-                        Remote — Worldwide
-                    </div>
-                    {session ? (
-                        <AccountMenu name={session.name} email={session.email} role={session.role} dashboardHref={dashboardHref} />
-                    ) : (
-                        <>
-                            <Link href="/login" className={buttonVariants({ variant: 'outline', size: 'sm' })}>Login</Link>
-                            <Link href="/register" className={buttonVariants({ variant: 'primary', size: 'sm' })}>
-                                Join now <ArrowRight className="ml-2 h-4 w-4" />
-                            </Link>
-                        </>
-                    )}
-                    <button className="rounded-lg border border-slate-200 p-2 lg:hidden" aria-label="Toggle menu">
-                        <Menu className="h-4 w-4" />
-                    </button>
-                </div>
-            </div>
-        </header>
+        <SiteHeaderClient
+            navItems={navItems}
+            session={session ? { name: session.name, email: session.email, role: session.role } : null}
+            dashboardHref={dashboardHref}
+        />
     );
 }
