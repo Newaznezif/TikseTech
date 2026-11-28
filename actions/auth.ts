@@ -186,7 +186,7 @@ export async function logoutUser() {
 /** Send a single-use recovery link without revealing whether an account exists. */
 export async function requestPasswordReset(formData: FormData) {
     const email = String(formData.get('email') || '').trim().toLowerCase();
-    if (!email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) redirect('/forgot-password?error=invalid-email');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirect('/forgot-password?error=invalid-email');
     if (!isSupabaseConfigured() || shouldUseLocalStore()) redirect('/forgot-password?error=unavailable');
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${appUrl}/auth/callback?next=/update-password` });
